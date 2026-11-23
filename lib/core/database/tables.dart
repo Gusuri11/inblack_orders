@@ -49,6 +49,18 @@ class Outbox extends Table {
   IntColumn get createdAt => integer().map(const EpochMillisConverter())();
 }
 
+@DataClassName('OrderDetailRow')
+class OrderDetails extends Table {
+  TextColumn get id => text()();
+  TextColumn get json => text()();
+  TextColumn get etag => text().nullable()();
+  IntColumn get version => integer()();
+  IntColumn get fetchedAt => integer().map(const EpochMillisConverter())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DataClassName('SyncStateRow')
 class SyncState extends Table {
   IntColumn get id => integer().withDefault(const Constant(0))();

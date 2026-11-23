@@ -9,7 +9,7 @@ import 'package:inblack_orders/core/database/user_data_store.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Orders, Outbox, SyncState],
+  tables: [Orders, Outbox, SyncState, OrderDetails],
   daos: [OrdersDao, SyncStateDao],
 )
 class AppDatabase extends _$AppDatabase implements UserDataStore {
@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
   );
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -36,6 +36,9 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
           'UPDATE sync_state SET sync_seq = NULL, older_cursor = NULL, '
           'reached_end = 0',
         );
+      },
+      from2To3: (m, schema) async {
+        await m.createTable(schema.orderDetails);
       },
     ),
     beforeOpen: (details) async {
@@ -53,6 +56,7 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
 
   Future<void> wipeUserData() => transaction(() async {
     await delete(orders).go();
+    await delete(orderDetails).go();
     await delete(outbox).go();
     await delete(syncState).go();
   });

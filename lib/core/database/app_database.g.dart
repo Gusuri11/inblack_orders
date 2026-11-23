@@ -1899,12 +1899,365 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   }
 }
 
+class $OrderDetailsTable extends OrderDetails
+    with TableInfo<$OrderDetailsTable, OrderDetailRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OrderDetailsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jsonMeta = const VerificationMeta('json');
+  @override
+  late final GeneratedColumn<String> json = GeneratedColumn<String>(
+    'json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _etagMeta = const VerificationMeta('etag');
+  @override
+  late final GeneratedColumn<String> etag = GeneratedColumn<String>(
+    'etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DateTime, int> fetchedAt =
+      GeneratedColumn<int>(
+        'fetched_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<DateTime>($OrderDetailsTable.$converterfetchedAt);
+  @override
+  List<GeneratedColumn> get $columns => [id, json, etag, version, fetchedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'order_details';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OrderDetailRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('json')) {
+      context.handle(
+        _jsonMeta,
+        json.isAcceptableOrUnknown(data['json']!, _jsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jsonMeta);
+    }
+    if (data.containsKey('etag')) {
+      context.handle(
+        _etagMeta,
+        etag.isAcceptableOrUnknown(data['etag']!, _etagMeta),
+      );
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OrderDetailRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OrderDetailRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      json: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json'],
+      )!,
+      etag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etag'],
+      ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      fetchedAt: $OrderDetailsTable.$converterfetchedAt.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}fetched_at'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $OrderDetailsTable createAlias(String alias) {
+    return $OrderDetailsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<DateTime, int> $converterfetchedAt =
+      const EpochMillisConverter();
+}
+
+class OrderDetailRow extends DataClass implements Insertable<OrderDetailRow> {
+  final String id;
+  final String json;
+  final String? etag;
+  final int version;
+  final DateTime fetchedAt;
+  const OrderDetailRow({
+    required this.id,
+    required this.json,
+    this.etag,
+    required this.version,
+    required this.fetchedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['json'] = Variable<String>(json);
+    if (!nullToAbsent || etag != null) {
+      map['etag'] = Variable<String>(etag);
+    }
+    map['version'] = Variable<int>(version);
+    {
+      map['fetched_at'] = Variable<int>(
+        $OrderDetailsTable.$converterfetchedAt.toSql(fetchedAt),
+      );
+    }
+    return map;
+  }
+
+  OrderDetailsCompanion toCompanion(bool nullToAbsent) {
+    return OrderDetailsCompanion(
+      id: Value(id),
+      json: Value(json),
+      etag: etag == null && nullToAbsent ? const Value.absent() : Value(etag),
+      version: Value(version),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory OrderDetailRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OrderDetailRow(
+      id: serializer.fromJson<String>(json['id']),
+      json: serializer.fromJson<String>(json['json']),
+      etag: serializer.fromJson<String?>(json['etag']),
+      version: serializer.fromJson<int>(json['version']),
+      fetchedAt: serializer.fromJson<DateTime>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'json': serializer.toJson<String>(json),
+      'etag': serializer.toJson<String?>(etag),
+      'version': serializer.toJson<int>(version),
+      'fetchedAt': serializer.toJson<DateTime>(fetchedAt),
+    };
+  }
+
+  OrderDetailRow copyWith({
+    String? id,
+    String? json,
+    Value<String?> etag = const Value.absent(),
+    int? version,
+    DateTime? fetchedAt,
+  }) => OrderDetailRow(
+    id: id ?? this.id,
+    json: json ?? this.json,
+    etag: etag.present ? etag.value : this.etag,
+    version: version ?? this.version,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+  );
+  OrderDetailRow copyWithCompanion(OrderDetailsCompanion data) {
+    return OrderDetailRow(
+      id: data.id.present ? data.id.value : this.id,
+      json: data.json.present ? data.json.value : this.json,
+      etag: data.etag.present ? data.etag.value : this.etag,
+      version: data.version.present ? data.version.value : this.version,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OrderDetailRow(')
+          ..write('id: $id, ')
+          ..write('json: $json, ')
+          ..write('etag: $etag, ')
+          ..write('version: $version, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, json, etag, version, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OrderDetailRow &&
+          other.id == this.id &&
+          other.json == this.json &&
+          other.etag == this.etag &&
+          other.version == this.version &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class OrderDetailsCompanion extends UpdateCompanion<OrderDetailRow> {
+  final Value<String> id;
+  final Value<String> json;
+  final Value<String?> etag;
+  final Value<int> version;
+  final Value<DateTime> fetchedAt;
+  final Value<int> rowid;
+  const OrderDetailsCompanion({
+    this.id = const Value.absent(),
+    this.json = const Value.absent(),
+    this.etag = const Value.absent(),
+    this.version = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OrderDetailsCompanion.insert({
+    required String id,
+    required String json,
+    this.etag = const Value.absent(),
+    required int version,
+    required DateTime fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       json = Value(json),
+       version = Value(version),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<OrderDetailRow> custom({
+    Expression<String>? id,
+    Expression<String>? json,
+    Expression<String>? etag,
+    Expression<int>? version,
+    Expression<int>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (json != null) 'json': json,
+      if (etag != null) 'etag': etag,
+      if (version != null) 'version': version,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OrderDetailsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? json,
+    Value<String?>? etag,
+    Value<int>? version,
+    Value<DateTime>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return OrderDetailsCompanion(
+      id: id ?? this.id,
+      json: json ?? this.json,
+      etag: etag ?? this.etag,
+      version: version ?? this.version,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (json.present) {
+      map['json'] = Variable<String>(json.value);
+    }
+    if (etag.present) {
+      map['etag'] = Variable<String>(etag.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<int>(
+        $OrderDetailsTable.$converterfetchedAt.toSql(fetchedAt.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OrderDetailsCompanion(')
+          ..write('id: $id, ')
+          ..write('json: $json, ')
+          ..write('etag: $etag, ')
+          ..write('version: $version, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $OrdersTable orders = $OrdersTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
+  late final $OrderDetailsTable orderDetails = $OrderDetailsTable(this);
   late final Index ordersCreatedIdx = Index(
     'orders_created_idx',
     'CREATE INDEX orders_created_idx ON orders (created_at, id)',
@@ -1927,6 +2280,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     orders,
     outbox,
     syncState,
+    orderDetails,
     ordersCreatedIdx,
     ordersStatusIdx,
     outboxOrderIdx,
@@ -2865,6 +3219,216 @@ typedef $$SyncStateTableProcessedTableManager =
       SyncStateRow,
       PrefetchHooks Function()
     >;
+typedef $$OrderDetailsTableCreateCompanionBuilder =
+    OrderDetailsCompanion Function({
+      required String id,
+      required String json,
+      Value<String?> etag,
+      required int version,
+      required DateTime fetchedAt,
+      Value<int> rowid,
+    });
+typedef $$OrderDetailsTableUpdateCompanionBuilder =
+    OrderDetailsCompanion Function({
+      Value<String> id,
+      Value<String> json,
+      Value<String?> etag,
+      Value<int> version,
+      Value<DateTime> fetchedAt,
+      Value<int> rowid,
+    });
+
+class $$OrderDetailsTableFilterComposer
+    extends Composer<_$AppDatabase, $OrderDetailsTable> {
+  $$OrderDetailsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<DateTime, DateTime, int> get fetchedAt =>
+      $composableBuilder(
+        column: $table.fetchedAt,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+}
+
+class $$OrderDetailsTableOrderingComposer
+    extends Composer<_$AppDatabase, $OrderDetailsTable> {
+  $$OrderDetailsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get json => $composableBuilder(
+    column: $table.json,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etag => $composableBuilder(
+    column: $table.etag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OrderDetailsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OrderDetailsTable> {
+  $$OrderDetailsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get json =>
+      $composableBuilder(column: $table.json, builder: (column) => column);
+
+  GeneratedColumn<String> get etag =>
+      $composableBuilder(column: $table.etag, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DateTime, int> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$OrderDetailsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OrderDetailsTable,
+          OrderDetailRow,
+          $$OrderDetailsTableFilterComposer,
+          $$OrderDetailsTableOrderingComposer,
+          $$OrderDetailsTableAnnotationComposer,
+          $$OrderDetailsTableCreateCompanionBuilder,
+          $$OrderDetailsTableUpdateCompanionBuilder,
+          (
+            OrderDetailRow,
+            BaseReferences<_$AppDatabase, $OrderDetailsTable, OrderDetailRow>,
+          ),
+          OrderDetailRow,
+          PrefetchHooks Function()
+        > {
+  $$OrderDetailsTableTableManager(_$AppDatabase db, $OrderDetailsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OrderDetailsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OrderDetailsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OrderDetailsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> json = const Value.absent(),
+                Value<String?> etag = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<DateTime> fetchedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OrderDetailsCompanion(
+                id: id,
+                json: json,
+                etag: etag,
+                version: version,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String json,
+                Value<String?> etag = const Value.absent(),
+                required int version,
+                required DateTime fetchedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => OrderDetailsCompanion.insert(
+                id: id,
+                json: json,
+                etag: etag,
+                version: version,
+                fetchedAt: fetchedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$OrderDetailsTable, OrderDetailRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $OrderDetailsTable,
+                    OrderDetailRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OrderDetailsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OrderDetailsTable,
+      OrderDetailRow,
+      $$OrderDetailsTableFilterComposer,
+      $$OrderDetailsTableOrderingComposer,
+      $$OrderDetailsTableAnnotationComposer,
+      $$OrderDetailsTableCreateCompanionBuilder,
+      $$OrderDetailsTableUpdateCompanionBuilder,
+      (
+        OrderDetailRow,
+        BaseReferences<_$AppDatabase, $OrderDetailsTable, OrderDetailRow>,
+      ),
+      OrderDetailRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2875,4 +3439,6 @@ class $AppDatabaseManager {
       $$OutboxTableTableManager(_db, _db.outbox);
   $$SyncStateTableTableManager get syncState =>
       $$SyncStateTableTableManager(_db, _db.syncState);
+  $$OrderDetailsTableTableManager get orderDetails =>
+      $$OrderDetailsTableTableManager(_db, _db.orderDetails);
 }

@@ -28,9 +28,48 @@ class OrderListFilter {
   );
 }
 
-@DriftAccessor(tables: [Orders])
+@DriftAccessor(tables: [Orders, OrderDetails])
 class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
   OrdersDao(super.attachedDatabase);
+
+  Future<bool> applyStatusUpdate({
+    required String id,
+    required String status,
+    required int version,
+    DateTime? updatedAt,
+  }) async {
+    final changed =
+        await (update(orders)..where(
+              (o) => o.id.equals(id) & o.version.isSmallerThanValue(version),
+            ))
+            .write(
+              OrdersCompanion(
+                status: Value(status),
+                version: Value(version),
+                updatedAt: updatedAt == null
+                    ? const Value.absent()
+                    : Value(updatedAt.toUtc()),
+              ),
+            );
+    return changed > 0;
+  }
+
+  Stream<OrderRow?> watchById(String id) =>
+      (select(orders)..where((o) => o.id.equals(id))).watchSingleOrNull();
+
+  Stream<OrderDetailRow?> watchDetail(String id) =>
+      (select(orderDetails)..where((d) => d.id.equals(id))).watchSingleOrNull();
+
+  Future<OrderDetailRow?> findDetail(String id) =>
+      (select(orderDetails)..where((d) => d.id.equals(id))).getSingleOrNull();
+
+  Future<void> saveDetail(OrderDetailsCompanion row) =>
+      into(orderDetails).insertOnConflictUpdate(row);
+
+  Future<void> touchDetail(String id, DateTime fetchedAt) =>
+      (update(orderDetails)..where((d) => d.id.equals(id))).write(
+        OrderDetailsCompanion(fetchedAt: Value(fetchedAt.toUtc())),
+      );
 
   Future<void> upsertAll(List<OrdersCompanion> rows) async {
     if (rows.isEmpty) return;
@@ -52,10 +91,13 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     await batch((b) => b.insertAll(orders, rows));
   });
 
-  Future<int> deleteByIds(Iterable<String> ids) {
+  Future<int> deleteByIds(Iterable<String> ids) async {
     final list = ids.toList();
-    if (list.isEmpty) return Future.value(0);
-    return (delete(orders)..where((o) => o.id.isIn(list))).go();
+    if (list.isEmpty) return 0;
+    return await transaction(() async {
+      await (delete(orderDetails)..where((d) => d.id.isIn(list))).go();
+      return await (delete(orders)..where((o) => o.id.isIn(list))).go();
+    });
   }
 
   Future<OrderRow?> findById(String id) =>
