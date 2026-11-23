@@ -19,6 +19,21 @@ extension OrderSummaryToRow on OrderSummary {
   );
 }
 
+extension OrderDetailToSummary on OrderDetail {
+  OrderSummary toSummary() => OrderSummary(
+    id: id,
+    status: status,
+    version: version,
+    totalMinor: totalMinor,
+    currency: currency,
+    lineCount: lineCount,
+    itemCount: itemCount,
+    primaryItem: primaryItem,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+}
+
 extension OrderRowToSummary on OrderRow {
   OrderSummary toSummary() {
     final sku = primarySku;

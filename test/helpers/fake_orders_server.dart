@@ -35,6 +35,43 @@ class FakeOrder {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': createdAt.toIso8601String(),
   };
+
+  final List<String> notes = [];
+
+  String get etag => '"v$version-n${notes.length}"';
+
+  Map<String, dynamic> toDetailJson() => {
+    ...toJson(),
+    'playerId': playerId,
+    'channel': 'APP',
+    'items': [
+      {
+        'sku': 'DM-0520',
+        'name': name,
+        'quantity': 1,
+        'unitPriceMinor': 17900,
+        'imageUrl': null,
+      },
+    ],
+    'history': [
+      {
+        'status': status,
+        'at': createdAt.toIso8601String(),
+        'by': 'system',
+        'note': null,
+      },
+    ],
+    'notes': [
+      for (final (i, n) in notes.indexed)
+        {
+          'id': 'n_$i',
+          'text': n,
+          'author': 'customer',
+          'createdAt': createdAt.toIso8601String(),
+        },
+    ],
+    'attachments': <Object>[],
+  };
 }
 
 class FakeOrdersServer {
@@ -170,6 +207,18 @@ class FakeOrdersServer {
           'hasMore': all.length > limit,
           'syncSeq': seq,
         });
+    }
+    final detailMatch = RegExp(r'^/orders/([^/]+)$').firstMatch(r.path);
+    if (detailMatch != null) {
+      final id = Uri.decodeComponent(detailMatch.group(1) ?? '');
+      final o = orders.where((x) => x.id == id).firstOrNull;
+      if (o == null) {
+        return const FakeResponse(404, {'error': 'order_not_found'});
+      }
+      if (r.headers['If-None-Match'] == o.etag) {
+        return FakeResponse(304, null, {'etag': o.etag});
+      }
+      return FakeResponse(200, o.toDetailJson(), {'etag': o.etag});
     }
     return const FakeResponse(404, {'error': 'not_found'});
   }
