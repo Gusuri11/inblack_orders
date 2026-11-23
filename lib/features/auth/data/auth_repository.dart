@@ -27,6 +27,7 @@ class AuthRepository {
         refreshToken: response.refreshToken,
         userId: response.user.id,
       ),
+      expiresIn: Duration(seconds: response.expiresIn),
     );
     return response.user;
   }

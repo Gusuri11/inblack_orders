@@ -27,20 +27,28 @@ class SessionManager {
     required this._storage,
     this._maxRefreshAttempts = 3,
     this._retryDelay = const Duration(milliseconds: 500),
-  });
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final AuthApi _api;
   final TokenStorage _storage;
   final int _maxRefreshAttempts;
   final Duration _retryDelay;
+  final DateTime Function() _clock;
 
   final _ended = StreamController<SessionEndReason>.broadcast();
+  final _tokens = StreamController<String>.broadcast();
 
   StoredSession? _cache;
   bool _loaded = false;
   Future<String>? _inflight;
+  DateTime? _accessExpiresAt;
 
   Stream<SessionEndReason> get sessionEnded => _ended.stream;
+
+  Stream<String> get tokenChanges => _tokens.stream;
+
+  DateTime? get accessExpiresAt => _accessExpiresAt;
 
   Future<StoredSession?> session() async {
     if (!_loaded) {
@@ -50,10 +58,13 @@ class SessionManager {
     return _cache;
   }
 
-  Future<void> start(StoredSession session) async {
+  Future<void> start(StoredSession session, {Duration? expiresIn}) async {
     await _storage.save(session);
+    final changed = _cache?.accessToken != session.accessToken;
     _cache = session;
     _loaded = true;
+    _accessExpiresAt = expiresIn == null ? null : _clock().add(expiresIn);
+    if (changed) _tokens.add(session.accessToken);
   }
 
   Future<String?> accessToken() async {
@@ -84,6 +95,7 @@ class SessionManager {
     await _storage.clear();
     _cache = null;
     _loaded = true;
+    _accessExpiresAt = null;
   }
 
   Future<String> _refresh(String failedAccessToken) async {
@@ -104,7 +116,7 @@ class SessionManager {
           refreshToken: response.refreshToken,
           userId: current.userId,
         );
-        await start(next);
+        await start(next, expiresIn: Duration(seconds: response.expiresIn));
         return next.accessToken;
       } on ApiException catch (e) {
         if (e.statusCode == 401) {
@@ -118,5 +130,8 @@ class SessionManager {
     }
   }
 
-  Future<void> dispose() => _ended.close();
+  Future<void> dispose() async {
+    await _ended.close();
+    await _tokens.close();
+  }
 }
