@@ -1,10 +1,6 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'order_models.dart';
 
-// **************************************************************************
-// JsonSerializableGenerator
-// **************************************************************************
 
 _PrimaryItem _$PrimaryItemFromJson(Map<String, dynamic> json) => _PrimaryItem(
   sku: json['sku'] as String,
@@ -183,6 +179,40 @@ Map<String, dynamic> _$OrdersPageToJson(_OrdersPage instance) =>
       'items': instance.items,
       'syncSeq': instance.syncSeq,
       'nextCursor': instance.nextCursor,
+    };
+
+_OrderChange _$OrderChangeFromJson(Map<String, dynamic> json) => _OrderChange(
+  seq: (json['seq'] as num).toInt(),
+  type: json['type'] as String,
+  order: json['order'] == null
+      ? null
+      : OrderSummary.fromJson(json['order'] as Map<String, dynamic>),
+  id: json['id'] as String?,
+);
+
+Map<String, dynamic> _$OrderChangeToJson(_OrderChange instance) =>
+    <String, dynamic>{
+      'seq': instance.seq,
+      'type': instance.type,
+      'order': instance.order,
+      'id': instance.id,
+    };
+
+_ChangesPage _$ChangesPageFromJson(Map<String, dynamic> json) => _ChangesPage(
+  changes: (json['changes'] as List<dynamic>)
+      .map((e) => OrderChange.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  nextSince: (json['nextSince'] as num).toInt(),
+  hasMore: json['hasMore'] as bool,
+  syncSeq: (json['syncSeq'] as num).toInt(),
+);
+
+Map<String, dynamic> _$ChangesPageToJson(_ChangesPage instance) =>
+    <String, dynamic>{
+      'changes': instance.changes,
+      'nextSince': instance.nextSince,
+      'hasMore': instance.hasMore,
+      'syncSeq': instance.syncSeq,
     };
 
 _OrdersSummary _$OrdersSummaryFromJson(Map<String, dynamic> json) =>

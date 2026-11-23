@@ -125,6 +125,32 @@ abstract class OrdersPage with _$OrdersPage {
 }
 
 @freezed
+abstract class OrderChange with _$OrderChange {
+  const factory OrderChange({
+    required int seq,
+    required String type,
+    OrderSummary? order,
+    String? id,
+  }) = _OrderChange;
+
+  factory OrderChange.fromJson(Map<String, dynamic> json) =>
+      _$OrderChangeFromJson(json);
+}
+
+@freezed
+abstract class ChangesPage with _$ChangesPage {
+  const factory ChangesPage({
+    required List<OrderChange> changes,
+    required int nextSince,
+    required bool hasMore,
+    required int syncSeq,
+  }) = _ChangesPage;
+
+  factory ChangesPage.fromJson(Map<String, dynamic> json) =>
+      _$ChangesPageFromJson(json);
+}
+
+@freezed
 abstract class OrdersSummary with _$OrdersSummary {
   const factory OrdersSummary({
     required Map<String, int> counts,
