@@ -5,10 +5,14 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
+import 'package:inblack_orders/core/database/outbox_dao.dart';
 import 'package:inblack_orders/core/network/api_exception.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/data/order_detail_repository.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
+import 'package:inblack_orders/features/orders/domain/order_status.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
+import 'package:inblack_orders/features/outbox/data/outbox_repository.dart';
 
 part 'order_detail_controller.freezed.dart';
 
@@ -23,15 +27,48 @@ abstract class OrderDetailState with _$OrderDetailState {
     @Default(false) bool notFound,
     @Default(false) bool deleted,
     ApiException? error,
+    @Default(<OutboxRow>[]) List<OutboxRow> outbox,
   }) = _OrderDetailState;
 
   const OrderDetailState._();
 
-  String? get status {
+  OutboxRow? get pendingCancel => outbox
+      .where((r) => r.kind == OutboxKinds.cancel && r.isActive)
+      .firstOrNull;
+
+  OutboxRow? get conflict =>
+      outbox.where((r) => r.state == OutboxStates.conflict).firstOrNull;
+
+  List<OutboxRow> get failed =>
+      outbox.where((r) => r.state == OutboxStates.failed).toList();
+
+  List<OutboxRow> get queuedNotes =>
+      outbox.where((r) => r.kind == OutboxKinds.note && r.isActive).toList();
+
+  int? get currentVersion {
+    final d = detail?.version;
+    final live = liveVersion;
+    if (d == null) return live;
+    return live != null && live > d ? live : d;
+  }
+
+  String? get serverStatus {
     final d = detail;
     final live = liveVersion;
     if (d == null) return liveStatus;
     return live != null && live > d.version ? liveStatus ?? d.status : d.status;
+  }
+
+  String? get status =>
+      pendingCancel != null ? OrderStatuses.cancelled : serverStatus;
+
+  bool get canCancel {
+    final s = serverStatus;
+    return s != null &&
+        OrderStatuses.cancellable.contains(s) &&
+        pendingCancel == null &&
+        conflict == null &&
+        !deleted;
   }
 }
 
@@ -59,6 +96,7 @@ class OrderDetailController extends Notifier<OrderDetailState> {
 
   StreamSubscription<OrderDetail?>? _detailSub;
   StreamSubscription<OrderRow?>? _rowSub;
+  StreamSubscription<List<OutboxRow>>? _outboxSub;
   Timer? _refetch;
   bool _hadContent = false;
   bool _fetching = false;
@@ -70,10 +108,17 @@ class OrderDetailController extends Notifier<OrderDetailState> {
     ref.onDispose(() {
       unawaited(_detailSub?.cancel());
       unawaited(_rowSub?.cancel());
+      unawaited(_outboxSub?.cancel());
       _refetch?.cancel();
     });
     _detailSub = _repo.watch(orderId).listen(_onDetail);
     _rowSub = _repo.watchSummary(orderId).listen(_onRow);
+    _outboxSub = ref
+        .read(outboxRepositoryProvider)
+        .watchForOrder(orderId)
+        .listen((items) {
+          if (ref.mounted) state = state.copyWith(outbox: items);
+        });
     unawaited(Future.microtask(fetch));
     return const OrderDetailState();
   }

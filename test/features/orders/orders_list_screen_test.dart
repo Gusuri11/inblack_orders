@@ -8,9 +8,12 @@ import 'package:inblack_orders/features/orders/application/orders_list_state.dar
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/presentation/orders_list_screen.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 import 'package:inblack_orders/features/realtime/data/realtime_client.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
+import '../../helpers/fake_outbox_actions.dart';
 
 class _FakeController extends OrdersListController {
   _FakeController(this._initial);
@@ -73,6 +76,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          outboxActionsProvider.overrideWithValue(FakeOutboxActions()),
+          outboxItemsProvider.overrideWith((ref) => Stream.value(const [])),
           ordersListControllerProvider.overrideWith(() => controller),
           clockProvider.overrideWithValue(() => _now),
           realtimeControlProvider.overrideWithValue(_NoRealtime()),
@@ -121,8 +126,14 @@ void main() {
     expect(find.text('฿1,234.56'), findsNWidgets(2));
     expect(find.text('Diamond Pack 520 💎 (+2 รายการ)'), findsOneWidget);
     expect(find.text('5 นาทีที่แล้ว'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('สถานะ: ชำระเงินแล้ว')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('สถานะ: SOMETHING_NEW')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('สถานะ: ชำระเงินแล้ว')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('สถานะ: SOMETHING_NEW')),
+      findsOneWidget,
+    );
     expect(find.text('ทั้งหมด (11)'), findsOneWidget);
     expect(find.text('SOMETHING_NEW (1)'), findsOneWidget);
     expect(find.text('แสดงครบทุกรายการแล้ว'), findsOneWidget);
@@ -222,6 +233,9 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('ORD-100042'), findsOneWidget);
     expect(find.text('฿1,234.56'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('สถานะ: กำลังดำเนินการ')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('สถานะ: กำลังดำเนินการ')),
+      findsOneWidget,
+    );
   });
 }

@@ -9,12 +9,14 @@ class OrderTile extends StatelessWidget {
     required this.order,
     required this.now,
     required this.onTap,
+    this.pending = false,
     super.key,
   });
 
   final OrderSummary order;
   final DateTime now;
   final VoidCallback onTap;
+  final bool pending;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +79,7 @@ class OrderTile extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           StatusBadge(status: order.status),
+                          if (pending) const PendingChip(),
                           Text(
                             time,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -130,6 +133,48 @@ class ProductThumbnail extends StatelessWidget {
                       ColoredBox(color: scheme.surfaceContainerHighest),
                   errorWidget: (_, _, _) => placeholder,
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class PendingChip extends StatelessWidget {
+  const PendingChip({super.key, this.label = 'รอส่ง'});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'สถานะการส่ง: $label',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: scheme.outline),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.schedule_send,
+                size: 14,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

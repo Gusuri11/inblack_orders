@@ -12,6 +12,8 @@ import 'package:inblack_orders/features/orders/application/orders_list_state.dar
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/order_tile.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/status_filter_bar.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
+import 'package:inblack_orders/features/outbox/presentation/outbox_screen.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 import 'package:inblack_orders/features/realtime/presentation/connection_indicator.dart';
 
@@ -46,6 +48,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
     final realtime = ref.read(realtimeControlProvider);
     _realtime = realtime;
     unawaited(realtime.setEnabled(enabled: true));
+    ref.read(outboxActionsProvider).drain();
   }
 
   @override
@@ -97,7 +100,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('คำสั่งซื้อ'),
-        actions: const [ConnectionIndicator()],
+        actions: const [OutboxAction(), ConnectionIndicator()],
       ),
       body: Column(
         children: [
@@ -192,6 +195,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
           key: ValueKey(order.id),
           order: order,
           now: now,
+          pending: state.pendingIds.contains(order.id),
           onTap: () => unawaited(context.push('/orders/${order.id}')),
         );
       },

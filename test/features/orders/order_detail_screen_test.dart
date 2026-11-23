@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inblack_orders/features/orders/application/order_detail_controller.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/presentation/order_detail_screen.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
+import '../../helpers/fake_outbox_actions.dart';
 
 class _FakeDetail extends OrderDetailController {
   _FakeDetail(super.orderId, this._state);
@@ -63,6 +66,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          outboxActionsProvider.overrideWithValue(FakeOutboxActions()),
+          outboxItemsProvider.overrideWith((ref) => Stream.value(const [])),
           orderDetailControllerProvider('ORD-100042')
               .overrideWith(() => _FakeDetail('ORD-100042', state)),
           shareTextProvider.overrideWithValue((text) async => shared.add(text)),
@@ -83,9 +88,18 @@ void main() {
   testWidgets('shows totals, items, timeline and notes', (tester) async {
     await pump(tester, OrderDetailState(detail: _detail(), loading: false));
     expect(find.text('฿358.00'), findsNWidgets(2));
+    expect(
+      find.bySemanticsLabel(RegExp('สถานะ: ชำระเงินแล้ว')),
+      findsOneWidget,
+    );
     expect(find.text('2 × ฿179.00'), findsOneWidget);
     expect(find.text('51234567'), findsOneWidget);
     expect(find.text('ชำระผ่านบัตร'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('ขอบคุณครับ'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('ขอบคุณครับ'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('ไม่มีไฟล์แนบ'),
@@ -93,10 +107,6 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('ไม่มีไฟล์แนบ'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel(RegExp('สถานะ: ชำระเงินแล้ว')),
-      findsOneWidget,
-    );
   });
 
   testWidgets('a newer live status overrides the cached one', (tester) async {

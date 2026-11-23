@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 
 class RealtimeLifecycle extends ConsumerStatefulWidget {
@@ -23,6 +24,9 @@ class _RealtimeLifecycleState extends ConsumerState<RealtimeLifecycle> {
             state == AppLifecycleState.resumed ||
             state == AppLifecycleState.inactive;
         ref.read(realtimeControlProvider).setForeground(foreground: foreground);
+        if (state == AppLifecycleState.resumed) {
+          ref.read(outboxActionsProvider).drain();
+        }
       },
     );
   }

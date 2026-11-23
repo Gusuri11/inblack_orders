@@ -13,6 +13,7 @@ abstract class OrdersListState with _$OrdersListState {
     @Default('') String searchText,
     @Default('') String activeQuery,
     @Default(<OrderSummary>[]) List<OrderSummary> rows,
+    @Default(<String>{}) Set<String> pendingIds,
     @Default(false) bool rowsLoaded,
     @Default(false) bool hasMoreLocal,
     @Default(false) bool canLoadMoreRemote,

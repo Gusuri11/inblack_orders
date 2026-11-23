@@ -6,12 +6,16 @@ import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/core/database/order_key.dart';
 import 'package:inblack_orders/core/database/orders_dao.dart';
+import 'package:inblack_orders/core/database/outbox_dao.dart';
 import 'package:inblack_orders/core/database/sync_state_dao.dart';
 import 'package:inblack_orders/core/network/api_exception.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_state.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/data/order_row_mapper.dart';
+import 'package:inblack_orders/features/orders/domain/order_status.dart';
+import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
+import 'package:inblack_orders/features/outbox/data/outbox_repository.dart';
 
 final searchDebounceProvider = Provider<Duration>(
   (ref) => const Duration(milliseconds: 300),
@@ -32,6 +36,10 @@ class OrdersListController extends Notifier<OrdersListState> {
   StreamSubscription<List<OrderRow>>? _rowsSub;
   StreamSubscription<int>? _newSub;
   StreamSubscription<SyncStateRow>? _syncSub;
+  StreamSubscription<List<OutboxRow>>? _outboxSub;
+  List<OrderRow> _rawRows = const [];
+  Set<String> _pendingCancel = const {};
+  Set<String> _pendingAny = const {};
   Timer? _debounce;
 
   SyncStateRow? _sync;
@@ -55,9 +63,11 @@ class OrdersListController extends Notifier<OrdersListState> {
       unawaited(_rowsSub?.cancel());
       unawaited(_newSub?.cancel());
       unawaited(_syncSub?.cancel());
+      unawaited(_outboxSub?.cancel());
       _debounce?.cancel();
     });
     _syncSub = _db.syncStateDao.watch().listen(_onSyncState);
+    _outboxSub = _db.outboxDao.watchAll().listen(_onOutbox);
     ref.listen(networkOnlineProvider, (previous, next) {
       final wasOffline = previous?.value == false;
       if (next.value ?? false) {
@@ -78,6 +88,7 @@ class OrdersListController extends Notifier<OrdersListState> {
       return;
     }
     try {
+      unawaited(ref.read(outboxProcessorProvider).drain());
       await ref.read(orderSyncEngineProvider).sync();
       if (ref.mounted) _markOnline();
     } on ApiException catch (e) {
@@ -425,8 +436,10 @@ class OrdersListController extends Notifier<OrdersListState> {
     _rowsSub = dao.watchList(filter, limit: _limit + 1).listen((rows) {
       if (!ref.mounted) return;
       final more = rows.length > _limit;
+      _rawRows = rows.take(_limit).toList();
       state = state.copyWith(
-        rows: [for (final r in rows.take(_limit)) r.toSummary()],
+        rows: _overlay(_rawRows),
+        pendingIds: _pendingAny,
         rowsLoaded: true,
         hasMoreLocal: more,
         canLoadMoreRemote: _canFetchRemote,
@@ -443,6 +456,25 @@ class OrdersListController extends Notifier<OrdersListState> {
       });
     }
   }
+
+  void _onOutbox(List<OutboxRow> items) {
+    if (!ref.mounted) return;
+    final active = items.where((r) => r.isActive);
+    _pendingAny = {for (final r in active) r.orderId};
+    _pendingCancel = {
+      for (final r in active)
+        if (r.kind == OutboxKinds.cancel) r.orderId,
+    };
+    state = state.copyWith(rows: _overlay(_rawRows), pendingIds: _pendingAny);
+  }
+
+  List<OrderSummary> _overlay(List<OrderRow> rows) => [
+    for (final r in rows)
+      if (_pendingCancel.contains(r.id))
+        r.toSummary().copyWith(status: OrderStatuses.cancelled)
+      else
+        r.toSummary(),
+  ];
 
   void _maybeFill() {
     if (state.rows.length >= _limit ||

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
 import 'package:inblack_orders/core/network/error_messages.dart';
 import 'package:inblack_orders/features/orders/application/order_detail_controller.dart';
@@ -11,6 +12,7 @@ import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/domain/order_status.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/order_tile.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/status_badge.dart';
+import 'package:inblack_orders/features/outbox/presentation/order_actions.dart';
 import 'package:share_plus/share_plus.dart';
 
 final shareTextProvider = Provider<Future<void> Function(String text)>(
@@ -60,10 +62,12 @@ class OrderDetailScreen extends ConsumerWidget {
       body = RefreshIndicator(
         onRefresh: controller.fetch,
         child: _DetailBody(
+          orderId: orderId,
           detail: detail,
           status: state.status ?? detail.status,
           deleted: state.deleted,
-          refreshError: error,
+          queuedNotes: state.queuedNotes,
+          pending: state.pendingCancel != null,
         ),
       );
     }
@@ -95,16 +99,20 @@ class OrderDetailScreen extends ConsumerWidget {
 
 class _DetailBody extends StatelessWidget {
   const _DetailBody({
+    required this.orderId,
     required this.detail,
     required this.status,
     required this.deleted,
-    required this.refreshError,
+    required this.queuedNotes,
+    required this.pending,
   });
 
+  final String orderId;
   final OrderDetail detail;
   final String status;
   final bool deleted;
-  final Object? refreshError;
+  final List<OutboxRow> queuedNotes;
+  final bool pending;
 
   @override
   Widget build(BuildContext context) {
@@ -114,12 +122,21 @@ class _DetailBody extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 32),
       children: [
         if (deleted) const _DeletedBanner(),
+        OutboxBanners(orderId: orderId),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StatusBadge(status: status),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  StatusBadge(status: status),
+                  if (pending) const PendingChip(),
+                ],
+              ),
               const SizedBox(height: 12),
               Semantics(
                 label:
@@ -149,6 +166,7 @@ class _DetailBody extends StatelessWidget {
             ],
           ),
         ),
+        CancelOrderButton(orderId: orderId),
         _Section(
           title: 'สินค้า (${detail.items.length})',
           empty: detail.items.isEmpty ? 'ไม่มีรายการสินค้า' : null,
@@ -166,9 +184,17 @@ class _DetailBody extends StatelessWidget {
           ],
         ),
         _Section(
-          title: 'โน้ต (${detail.notes.length})',
-          empty: detail.notes.isEmpty ? 'ยังไม่มีโน้ต' : null,
-          children: [for (final n in detail.notes) _NoteTile(note: n)],
+          title: 'โน้ต (${detail.notes.length + queuedNotes.length})',
+          children: [
+            if (detail.notes.isEmpty && queuedNotes.isEmpty)
+              Text(
+                'ยังไม่มีโน้ต',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            for (final n in detail.notes) _NoteTile(note: n),
+            for (final q in queuedNotes) QueuedNoteTile(row: q),
+            if (!deleted) NoteComposer(orderId: orderId),
+          ],
         ),
         _Section(
           title: 'ไฟล์แนบ (${detail.attachments.length})',

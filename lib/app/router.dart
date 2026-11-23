@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:inblack_orders/features/auth/presentation/login_screen.dart';
 import 'package:inblack_orders/features/orders/presentation/order_detail_screen.dart';
 import 'package:inblack_orders/features/orders/presentation/orders_list_screen.dart';
+import 'package:inblack_orders/features/outbox/presentation/outbox_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -13,6 +14,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/orders',
         builder: (_, _) => const OrdersListScreen(),
         routes: [
+          GoRoute(path: 'outbox', builder: (_, _) => const OutboxScreen()),
           GoRoute(
             path: ':id',
             builder: (_, state) =>
