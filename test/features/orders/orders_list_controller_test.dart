@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/core/network/retry_policy.dart';
@@ -13,6 +14,7 @@ import 'package:inblack_orders/features/orders/data/orders_api.dart';
 import 'package:inblack_orders/features/orders/data/orders_repository.dart';
 
 import '../../helpers/fake_http_adapter.dart';
+import '../../helpers/fake_network_status.dart';
 import '../../helpers/fake_orders_server.dart';
 
 Future<void> _noSleep(Duration _) async {}
@@ -26,6 +28,7 @@ void main() {
   late FakeOrdersServer server;
   late FakeHttpAdapter adapter;
   late ProviderContainer container;
+  late FakeNetworkStatus network;
 
   ProviderContainer makeContainer() {
     final api = OrdersApi(fakeDio(adapter));
@@ -38,6 +41,7 @@ void main() {
         ordersRepositoryProvider.overrideWithValue(
           OrdersRepository(api: api, db: db, retry: _retry),
         ),
+        networkStatusProvider.overrideWithValue(network),
         searchDebounceProvider.overrideWithValue(
           const Duration(milliseconds: 30),
         ),
@@ -75,6 +79,7 @@ void main() {
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
+    network = FakeNetworkStatus();
     server = FakeOrdersServer(count: 400);
     for (var i = 0; i < server.orders.length; i++) {
       if (i % 4 == 0) server.orders[i].status = 'COMPLETED';
@@ -294,5 +299,20 @@ void main() {
     ctrl().showNewest();
     await until((s) => s.rows.first.id == 'ORD-NEW');
     expect(read().newCount, 0);
+  });
+
+  test('losing the network marks offline, regaining it syncs', () async {
+    container = makeContainer();
+    await settle();
+    network.set(online: false);
+    await until((s) => s.offline);
+
+    server.update(server.orders[0].id, 'COMPLETED');
+    adapter.requests.clear();
+    network.set(online: true);
+
+    await until((s) => !s.offline);
+    await until((s) => s.rows.first.status == 'COMPLETED');
+    expect(adapter.countPath('/orders/changes'), greaterThanOrEqualTo(1));
   });
 }

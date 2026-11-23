@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inblack_orders/app/router.dart';
+import 'package:inblack_orders/features/realtime/presentation/realtime_lifecycle.dart';
 
 class InBlackOrdersApp extends ConsumerWidget {
   const InBlackOrdersApp({super.key});
@@ -15,6 +16,8 @@ class InBlackOrdersApp extends ConsumerWidget {
         brightness: Brightness.dark,
       ),
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) =>
+          RealtimeLifecycle(child: child ?? const SizedBox.shrink()),
     );
   }
 }

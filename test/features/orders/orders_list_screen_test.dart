@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/network/api_exception.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_controller.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_state.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/presentation/orders_list_screen.dart';
+import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
+import 'package:inblack_orders/features/realtime/data/realtime_client.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 class _FakeController extends OrdersListController {
@@ -26,6 +29,14 @@ class _FakeController extends OrdersListController {
 
   @override
   Future<void> retry() async => retries++;
+}
+
+class _NoRealtime implements RealtimeControl {
+  @override
+  Future<void> setEnabled({required bool enabled}) async {}
+
+  @override
+  void setForeground({required bool foreground}) {}
 }
 
 final _now = DateTime.utc(2026, 11, 6, 12);
@@ -64,6 +75,11 @@ void main() {
         overrides: [
           ordersListControllerProvider.overrideWith(() => controller),
           clockProvider.overrideWithValue(() => _now),
+          realtimeControlProvider.overrideWithValue(_NoRealtime()),
+          connectionStatusProvider.overrideWith(
+            (ref) => Stream.value(ConnectionStatus.live),
+          ),
+          networkOnlineProvider.overrideWith((ref) => Stream.value(true)),
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/core/database/order_key.dart';
@@ -57,8 +58,31 @@ class OrdersListController extends Notifier<OrdersListState> {
       _debounce?.cancel();
     });
     _syncSub = _db.syncStateDao.watch().listen(_onSyncState);
+    ref.listen(networkOnlineProvider, (previous, next) {
+      final wasOffline = previous?.value == false;
+      if (next.value ?? false) {
+        if (wasOffline || state.offline) unawaited(_onBackOnline());
+      } else if (next.value == false && !state.offline) {
+        state = state.copyWith(offline: true);
+        _resubscribe();
+      }
+    });
     unawaited(Future.microtask(_start));
     return const OrdersListState();
+  }
+
+  Future<void> _onBackOnline() async {
+    if (!ref.mounted) return;
+    if (state.rows.isEmpty && state.syncError != null) {
+      await _runSync();
+      return;
+    }
+    try {
+      await ref.read(orderSyncEngineProvider).sync();
+      if (ref.mounted) _markOnline();
+    } on ApiException catch (e) {
+      if (ref.mounted) _markFailure(e);
+    }
   }
 
   Future<void> _start() async {

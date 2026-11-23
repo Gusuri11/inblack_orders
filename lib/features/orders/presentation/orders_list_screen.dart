@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
 import 'package:inblack_orders/core/network/error_messages.dart';
 import 'package:inblack_orders/features/auth/application/auth_providers.dart';
@@ -11,6 +12,8 @@ import 'package:inblack_orders/features/orders/application/orders_list_state.dar
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/order_tile.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/status_filter_bar.dart';
+import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
+import 'package:inblack_orders/features/realtime/presentation/connection_indicator.dart';
 
 class OrdersListScreen extends ConsumerStatefulWidget {
   const OrdersListScreen({super.key});
@@ -23,6 +26,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   final _scroll = ScrollController();
   final _search = TextEditingController();
   StreamSubscription<Object>? _sessionSub;
+  RealtimeControl? _realtime;
   Timer? _ticker;
   bool _atTop = true;
 
@@ -39,10 +43,14 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
+    final realtime = ref.read(realtimeControlProvider);
+    _realtime = realtime;
+    unawaited(realtime.setEnabled(enabled: true));
   }
 
   @override
   void dispose() {
+    unawaited(_realtime?.setEnabled(enabled: false));
     _ticker?.cancel();
     unawaited(_sessionSub?.cancel());
     _scroll.dispose();
@@ -84,12 +92,17 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(ordersListControllerProvider);
     final now = ref.watch(clockProvider)();
+    final online = ref.watch(networkOnlineProvider).value ?? true;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('คำสั่งซื้อ')),
+      appBar: AppBar(
+        title: const Text('คำสั่งซื้อ'),
+        actions: const [ConnectionIndicator()],
+      ),
       body: Column(
         children: [
-          if (state.offline) _OfflineBanner(lastSyncedAt: state.lastSyncedAt),
+          if (state.offline || !online)
+            _OfflineBanner(lastSyncedAt: state.lastSyncedAt),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: _SearchField(
