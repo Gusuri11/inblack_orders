@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/app/app.dart';
 
 void main() {
-  runApp(const InBlackOrdersApp());
-}
-
-class InBlackOrdersApp extends StatelessWidget {
-  const InBlackOrdersApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'InBlack Orders',
-      home: Scaffold(body: SizedBox.shrink()),
-    );
-  }
+  runApp(const ProviderScope(child: InBlackOrdersApp()));
 }
