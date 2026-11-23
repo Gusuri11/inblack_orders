@@ -19,6 +19,11 @@ class AuthApi {
     return LoginResponse.fromJson(json);
   }
 
+  Future<RefreshResponse> refresh(String refreshToken) async {
+    final json = await _post('/auth/refresh', {'refreshToken': refreshToken});
+    return RefreshResponse.fromJson(json);
+  }
+
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body,
