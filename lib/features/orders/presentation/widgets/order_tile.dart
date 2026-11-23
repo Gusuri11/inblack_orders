@@ -1,0 +1,137 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:inblack_orders/core/format/formatters.dart';
+import 'package:inblack_orders/features/orders/data/order_models.dart';
+import 'package:inblack_orders/features/orders/presentation/widgets/status_badge.dart';
+
+class OrderTile extends StatelessWidget {
+  const OrderTile({
+    required this.order,
+    required this.now,
+    required this.onTap,
+    super.key,
+  });
+
+  final OrderSummary order;
+  final DateTime now;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final name = order.primaryItem?.name ?? 'ไม่มีรายการสินค้า';
+    final extra = order.lineCount > 1
+        ? ' (+${order.lineCount - 1} รายการ)'
+        : '';
+    final amount = Formatters.money(order.totalMinor, currency: order.currency);
+    final time = Formatters.orderTime(order.createdAt, now: now);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProductThumbnail(url: order.primaryItem?.imageUrl, size: 56),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 8,
+                        runSpacing: 2,
+                        children: [
+                          Text(
+                            order.id,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            amount,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$name$extra',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          StatusBadge(status: order.status),
+                          Text(
+                            time,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ProductThumbnail extends StatelessWidget {
+  const ProductThumbnail({required this.url, required this.size, super.key});
+
+  final String? url;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final placeholder = ColoredBox(
+      color: scheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: scheme.onSurfaceVariant,
+        size: size * 0.45,
+      ),
+    );
+    final image = url;
+    return ExcludeSemantics(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox.square(
+          dimension: size,
+          child: image == null || image.isEmpty
+              ? placeholder
+              : CachedNetworkImage(
+                  imageUrl: image,
+                  fit: BoxFit.cover,
+                  fadeInDuration: const Duration(milliseconds: 150),
+                  placeholder: (_, _) =>
+                      ColoredBox(color: scheme.surfaceContainerHighest),
+                  errorWidget: (_, _, _) => placeholder,
+                ),
+        ),
+      ),
+    );
+  }
+}
