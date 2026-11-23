@@ -1448,6 +1448,26 @@ class $SyncStateTable extends SyncState
         requiredDuringInsert: false,
       ).withConverter<DateTime?>($SyncStateTable.$converterlastSyncedAtn);
   @override
+  late final GeneratedColumnWithTypeConverter<DateTime?, int> oldestCreatedAt =
+      GeneratedColumn<int>(
+        'oldest_created_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      ).withConverter<DateTime?>($SyncStateTable.$converteroldestCreatedAtn);
+  static const VerificationMeta _oldestIdMeta = const VerificationMeta(
+    'oldestId',
+  );
+  @override
+  late final GeneratedColumn<String> oldestId = GeneratedColumn<String>(
+    'oldest_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     userId,
@@ -1455,6 +1475,8 @@ class $SyncStateTable extends SyncState
     olderCursor,
     reachedEnd,
     lastSyncedAt,
+    oldestCreatedAt,
+    oldestId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1498,6 +1520,12 @@ class $SyncStateTable extends SyncState
         reachedEnd.isAcceptableOrUnknown(data['reached_end']!, _reachedEndMeta),
       );
     }
+    if (data.containsKey('oldest_id')) {
+      context.handle(
+        _oldestIdMeta,
+        oldestId.isAcceptableOrUnknown(data['oldest_id']!, _oldestIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1533,6 +1561,16 @@ class $SyncStateTable extends SyncState
           data['${effectivePrefix}last_synced_at'],
         ),
       ),
+      oldestCreatedAt: $SyncStateTable.$converteroldestCreatedAtn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}oldest_created_at'],
+        ),
+      ),
+      oldestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}oldest_id'],
+      ),
     );
   }
 
@@ -1545,6 +1583,10 @@ class $SyncStateTable extends SyncState
       const EpochMillisConverter();
   static TypeConverter<DateTime?, int?> $converterlastSyncedAtn =
       NullAwareTypeConverter.wrap($converterlastSyncedAt);
+  static TypeConverter<DateTime, int> $converteroldestCreatedAt =
+      const EpochMillisConverter();
+  static TypeConverter<DateTime?, int?> $converteroldestCreatedAtn =
+      NullAwareTypeConverter.wrap($converteroldestCreatedAt);
 }
 
 class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
@@ -1554,6 +1596,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
   final String? olderCursor;
   final bool reachedEnd;
   final DateTime? lastSyncedAt;
+  final DateTime? oldestCreatedAt;
+  final String? oldestId;
   const SyncStateRow({
     required this.id,
     this.userId,
@@ -1561,6 +1605,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     this.olderCursor,
     required this.reachedEnd,
     this.lastSyncedAt,
+    this.oldestCreatedAt,
+    this.oldestId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1581,6 +1627,14 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
         $SyncStateTable.$converterlastSyncedAtn.toSql(lastSyncedAt),
       );
     }
+    if (!nullToAbsent || oldestCreatedAt != null) {
+      map['oldest_created_at'] = Variable<int>(
+        $SyncStateTable.$converteroldestCreatedAtn.toSql(oldestCreatedAt),
+      );
+    }
+    if (!nullToAbsent || oldestId != null) {
+      map['oldest_id'] = Variable<String>(oldestId);
+    }
     return map;
   }
 
@@ -1600,6 +1654,12 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       lastSyncedAt: lastSyncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncedAt),
+      oldestCreatedAt: oldestCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldestCreatedAt),
+      oldestId: oldestId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldestId),
     );
   }
 
@@ -1615,6 +1675,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       olderCursor: serializer.fromJson<String?>(json['olderCursor']),
       reachedEnd: serializer.fromJson<bool>(json['reachedEnd']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      oldestCreatedAt: serializer.fromJson<DateTime?>(json['oldestCreatedAt']),
+      oldestId: serializer.fromJson<String?>(json['oldestId']),
     );
   }
   @override
@@ -1627,6 +1689,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       'olderCursor': serializer.toJson<String?>(olderCursor),
       'reachedEnd': serializer.toJson<bool>(reachedEnd),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'oldestCreatedAt': serializer.toJson<DateTime?>(oldestCreatedAt),
+      'oldestId': serializer.toJson<String?>(oldestId),
     };
   }
 
@@ -1637,6 +1701,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     Value<String?> olderCursor = const Value.absent(),
     bool? reachedEnd,
     Value<DateTime?> lastSyncedAt = const Value.absent(),
+    Value<DateTime?> oldestCreatedAt = const Value.absent(),
+    Value<String?> oldestId = const Value.absent(),
   }) => SyncStateRow(
     id: id ?? this.id,
     userId: userId.present ? userId.value : this.userId,
@@ -1644,6 +1710,10 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     olderCursor: olderCursor.present ? olderCursor.value : this.olderCursor,
     reachedEnd: reachedEnd ?? this.reachedEnd,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    oldestCreatedAt: oldestCreatedAt.present
+        ? oldestCreatedAt.value
+        : this.oldestCreatedAt,
+    oldestId: oldestId.present ? oldestId.value : this.oldestId,
   );
   SyncStateRow copyWithCompanion(SyncStateCompanion data) {
     return SyncStateRow(
@@ -1659,6 +1729,10 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
+      oldestCreatedAt: data.oldestCreatedAt.present
+          ? data.oldestCreatedAt.value
+          : this.oldestCreatedAt,
+      oldestId: data.oldestId.present ? data.oldestId.value : this.oldestId,
     );
   }
 
@@ -1670,14 +1744,24 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           ..write('syncSeq: $syncSeq, ')
           ..write('olderCursor: $olderCursor, ')
           ..write('reachedEnd: $reachedEnd, ')
-          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('oldestCreatedAt: $oldestCreatedAt, ')
+          ..write('oldestId: $oldestId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, userId, syncSeq, olderCursor, reachedEnd, lastSyncedAt);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    syncSeq,
+    olderCursor,
+    reachedEnd,
+    lastSyncedAt,
+    oldestCreatedAt,
+    oldestId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1687,7 +1771,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           other.syncSeq == this.syncSeq &&
           other.olderCursor == this.olderCursor &&
           other.reachedEnd == this.reachedEnd &&
-          other.lastSyncedAt == this.lastSyncedAt);
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.oldestCreatedAt == this.oldestCreatedAt &&
+          other.oldestId == this.oldestId);
 }
 
 class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
@@ -1697,6 +1783,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   final Value<String?> olderCursor;
   final Value<bool> reachedEnd;
   final Value<DateTime?> lastSyncedAt;
+  final Value<DateTime?> oldestCreatedAt;
+  final Value<String?> oldestId;
   const SyncStateCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1704,6 +1792,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     this.olderCursor = const Value.absent(),
     this.reachedEnd = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
+    this.oldestCreatedAt = const Value.absent(),
+    this.oldestId = const Value.absent(),
   });
   SyncStateCompanion.insert({
     this.id = const Value.absent(),
@@ -1712,6 +1802,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     this.olderCursor = const Value.absent(),
     this.reachedEnd = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
+    this.oldestCreatedAt = const Value.absent(),
+    this.oldestId = const Value.absent(),
   });
   static Insertable<SyncStateRow> custom({
     Expression<int>? id,
@@ -1720,6 +1812,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Expression<String>? olderCursor,
     Expression<bool>? reachedEnd,
     Expression<int>? lastSyncedAt,
+    Expression<int>? oldestCreatedAt,
+    Expression<String>? oldestId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1728,6 +1822,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
       if (olderCursor != null) 'older_cursor': olderCursor,
       if (reachedEnd != null) 'reached_end': reachedEnd,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (oldestCreatedAt != null) 'oldest_created_at': oldestCreatedAt,
+      if (oldestId != null) 'oldest_id': oldestId,
     });
   }
 
@@ -1738,6 +1834,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Value<String?>? olderCursor,
     Value<bool>? reachedEnd,
     Value<DateTime?>? lastSyncedAt,
+    Value<DateTime?>? oldestCreatedAt,
+    Value<String?>? oldestId,
   }) {
     return SyncStateCompanion(
       id: id ?? this.id,
@@ -1746,6 +1844,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
       olderCursor: olderCursor ?? this.olderCursor,
       reachedEnd: reachedEnd ?? this.reachedEnd,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      oldestCreatedAt: oldestCreatedAt ?? this.oldestCreatedAt,
+      oldestId: oldestId ?? this.oldestId,
     );
   }
 
@@ -1772,6 +1872,14 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
         $SyncStateTable.$converterlastSyncedAtn.toSql(lastSyncedAt.value),
       );
     }
+    if (oldestCreatedAt.present) {
+      map['oldest_created_at'] = Variable<int>(
+        $SyncStateTable.$converteroldestCreatedAtn.toSql(oldestCreatedAt.value),
+      );
+    }
+    if (oldestId.present) {
+      map['oldest_id'] = Variable<String>(oldestId.value);
+    }
     return map;
   }
 
@@ -1783,7 +1891,9 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
           ..write('syncSeq: $syncSeq, ')
           ..write('olderCursor: $olderCursor, ')
           ..write('reachedEnd: $reachedEnd, ')
-          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('oldestCreatedAt: $oldestCreatedAt, ')
+          ..write('oldestId: $oldestId')
           ..write(')'))
         .toString();
   }
@@ -2492,6 +2602,8 @@ typedef $$SyncStateTableCreateCompanionBuilder = SyncStateCompanion Function({
   Value<String?> olderCursor,
   Value<bool> reachedEnd,
   Value<DateTime?> lastSyncedAt,
+  Value<DateTime?> oldestCreatedAt,
+  Value<String?> oldestId,
 });
 typedef $$SyncStateTableUpdateCompanionBuilder = SyncStateCompanion Function({
   Value<int> id,
@@ -2500,6 +2612,8 @@ typedef $$SyncStateTableUpdateCompanionBuilder = SyncStateCompanion Function({
   Value<String?> olderCursor,
   Value<bool> reachedEnd,
   Value<DateTime?> lastSyncedAt,
+  Value<DateTime?> oldestCreatedAt,
+  Value<String?> oldestId,
 });
 
 class $$SyncStateTableFilterComposer
@@ -2541,6 +2655,17 @@ class $$SyncStateTableFilterComposer
         column: $table.lastSyncedAt,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnWithTypeConverterFilters<DateTime?, DateTime, int>
+  get oldestCreatedAt => $composableBuilder(
+    column: $table.oldestCreatedAt,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get oldestId => $composableBuilder(
+    column: $table.oldestId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$SyncStateTableOrderingComposer
@@ -2581,6 +2706,16 @@ class $$SyncStateTableOrderingComposer
     column: $table.lastSyncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get oldestCreatedAt => $composableBuilder(
+    column: $table.oldestCreatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get oldestId => $composableBuilder(
+    column: $table.oldestId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncStateTableAnnotationComposer
@@ -2616,6 +2751,15 @@ class $$SyncStateTableAnnotationComposer
         column: $table.lastSyncedAt,
         builder: (column) => column,
       );
+
+  GeneratedColumnWithTypeConverter<DateTime?, int> get oldestCreatedAt =>
+      $composableBuilder(
+        column: $table.oldestCreatedAt,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get oldestId =>
+      $composableBuilder(column: $table.oldestId, builder: (column) => column);
 }
 
 class $$SyncStateTableTableManager
@@ -2655,6 +2799,8 @@ class $$SyncStateTableTableManager
                 Value<String?> olderCursor = const Value.absent(),
                 Value<bool> reachedEnd = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<DateTime?> oldestCreatedAt = const Value.absent(),
+                Value<String?> oldestId = const Value.absent(),
               }) => SyncStateCompanion(
                 id: id,
                 userId: userId,
@@ -2662,6 +2808,8 @@ class $$SyncStateTableTableManager
                 olderCursor: olderCursor,
                 reachedEnd: reachedEnd,
                 lastSyncedAt: lastSyncedAt,
+                oldestCreatedAt: oldestCreatedAt,
+                oldestId: oldestId,
               ),
           createCompanionCallback:
               ({
@@ -2671,6 +2819,8 @@ class $$SyncStateTableTableManager
                 Value<String?> olderCursor = const Value.absent(),
                 Value<bool> reachedEnd = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<DateTime?> oldestCreatedAt = const Value.absent(),
+                Value<String?> oldestId = const Value.absent(),
               }) => SyncStateCompanion.insert(
                 id: id,
                 userId: userId,
@@ -2678,6 +2828,8 @@ class $$SyncStateTableTableManager
                 olderCursor: olderCursor,
                 reachedEnd: reachedEnd,
                 lastSyncedAt: lastSyncedAt,
+                oldestCreatedAt: oldestCreatedAt,
+                oldestId: oldestId,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
+import 'package:inblack_orders/core/database/sync_state_dao.dart';
 import 'package:inblack_orders/core/network/api_exception.dart';
 import 'package:inblack_orders/core/network/retry_policy.dart';
 import 'package:inblack_orders/features/orders/data/order_sync_engine.dart';
@@ -192,6 +193,73 @@ void main() {
 
       expect(adapter.countPath('/orders'), 4);
       expect((await db.syncStateDao.read()).syncSeq, 0);
+    });
+  });
+
+  group('loadOlder', () {
+    test(
+      'first sync records the oldest loaded order as the boundary',
+      () async {
+        await engine().sync();
+        final state = await db.syncStateDao.read();
+        expect(state.oldestKey?.id, server.orders[199].id);
+      },
+    );
+
+    test('appends the next page and moves the boundary', () async {
+      final sync = engine();
+      await sync.sync();
+      adapter.requests.clear();
+
+      await sync.loadOlder();
+
+      expect(adapter.countPath('/orders'), 1);
+      expect(await localIds(), hasLength(250));
+      final state = await db.syncStateDao.read();
+      expect(state.oldestKey?.id, server.orders[249].id);
+      expect(state.reachedEnd, isFalse);
+    });
+
+    test('reaching the last page marks the end', () async {
+      useServer(FakeOrdersServer(count: 230));
+      final sync = engine();
+      await sync.sync();
+      await sync.loadOlder();
+      final state = await db.syncStateDao.read();
+      expect(state.reachedEnd, isTrue);
+      expect(await localIds(), hasLength(230));
+
+      adapter.requests.clear();
+      await sync.loadOlder();
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('without a previous sync it performs the first sync', () async {
+      await engine().loadOlder();
+      expect(await localIds(), hasLength(200));
+    });
+
+    test('an invalid cursor falls back to a full sync', () async {
+      final sync = engine();
+      await sync.sync();
+      server.failNext.add(const FakeResponse(400, {'error': 'invalid_cursor'}));
+      await sync.loadOlder();
+      expect(
+        (await db.syncStateDao.read()).oldestKey?.id,
+        server.orders[199].id,
+      );
+    });
+
+    test('loadOlder and sync never run at the same time', () async {
+      final sync = engine();
+      await sync.sync();
+      server.update(server.orders[0].id, 'COMPLETED');
+      await Future.wait([sync.loadOlder(), sync.sync(), sync.loadOlder()]);
+      expect(await localIds(), hasLength(250));
+      expect(
+        (await db.ordersDao.findById(server.orders[0].id))?.status,
+        'COMPLETED',
+      );
     });
   });
 

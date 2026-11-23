@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
+import 'package:inblack_orders/core/database/order_key.dart';
 import 'package:inblack_orders/core/database/tables.dart';
 
 part 'sync_state_dao.g.dart';
@@ -37,6 +38,16 @@ class SyncStateDao extends DatabaseAccessor<AppDatabase>
       olderCursor: Value(null),
       reachedEnd: Value(false),
       lastSyncedAt: Value(null),
+      oldestCreatedAt: Value(null),
+      oldestId: Value(null),
     ),
   );
+}
+
+extension SyncStateRowX on SyncStateRow {
+  OrderKey? get oldestKey {
+    final at = oldestCreatedAt;
+    final id = oldestId;
+    return at == null || id == null ? null : OrderKey(at, id);
+  }
 }

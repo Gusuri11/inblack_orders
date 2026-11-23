@@ -6,12 +6,21 @@ import 'package:dio/dio.dart';
 import 'fake_http_adapter.dart';
 
 class FakeOrder {
-  FakeOrder(this.id, this.createdAt, {this.status = 'PAID', this.version = 1});
+  FakeOrder(
+    this.id,
+    this.createdAt, {
+    this.status = 'PAID',
+    this.version = 1,
+    this.name = 'Diamond 💎',
+    this.playerId = '51234567',
+  });
 
   final String id;
   final DateTime createdAt;
   String status;
   int version;
+  String name;
+  String playerId;
   int changeSeq = 0;
 
   Map<String, dynamic> toJson() => {
@@ -22,7 +31,7 @@ class FakeOrder {
     'currency': 'THB',
     'lineCount': 1,
     'itemCount': 1,
-    'primaryItem': {'sku': 'DM-0520', 'name': 'Diamond 💎', 'imageUrl': null},
+    'primaryItem': {'sku': 'DM-0520', 'name': name, 'imageUrl': null},
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': createdAt.toIso8601String(),
   };
@@ -77,25 +86,65 @@ class FakeOrdersServer {
     }
   }
 
-  FutureOr<FakeResponse> handle(RequestOptions r) {
+  Duration? Function(RequestOptions r)? delay;
+  FakeResponse? Function(RequestOptions r)? intercept;
+
+  Future<FakeResponse> handle(RequestOptions r) async {
+    final d = delay?.call(r);
+    if (d != null) await Future<void>.delayed(d);
+    final custom = intercept?.call(r);
+    if (custom != null) return custom;
+    return _handle(r);
+  }
+
+  FakeResponse _handle(RequestOptions r) {
     if (failNext.isNotEmpty) return failNext.removeAt(0);
     final q = r.queryParameters;
     switch (r.path) {
       case '/orders':
         final limit = q['limit'] as int? ?? 20;
         final cursor = q['cursor'] as String?;
+        final statuses = ((q['status'] as String?) ?? '')
+            .split(',')
+            .where((s) => s.isNotEmpty)
+            .toSet();
+        final text = ((q['q'] as String?) ?? '').toLowerCase();
+        final filterKey = '${(statuses.toList()..sort()).join(',')}|$text';
+        final matching = orders
+            .where(
+              (o) =>
+                  (statuses.isEmpty || statuses.contains(o.status)) &&
+                  (text.isEmpty ||
+                      o.id.toLowerCase().contains(text) ||
+                      o.name.toLowerCase().contains(text) ||
+                      o.playerId.contains(text)),
+            )
+            .toList();
         var start = 0;
         if (cursor != null) {
-          final lastId = utf8.decode(base64Url.decode(cursor));
-          start = orders.indexWhere((o) => o.id == lastId) + 1;
+          final decoded = utf8.decode(base64Url.decode(cursor)).split('#');
+          if (decoded.length != 2 || decoded[1] != filterKey) {
+            return const FakeResponse(400, {'error': 'invalid_cursor'});
+          }
+          start = matching.indexWhere((o) => o.id == decoded[0]) + 1;
         }
-        final page = orders.skip(start).take(limit).toList();
-        final more = start + page.length < orders.length;
+        final page = matching.skip(start).take(limit).toList();
+        final more = start + page.length < matching.length;
         return FakeResponse(200, {
           'items': [for (final o in page) o.toJson()],
           'nextCursor': more
-              ? base64Url.encode(utf8.encode(page.last.id))
+              ? base64Url.encode(utf8.encode('${page.last.id}#$filterKey'))
               : null,
+          'syncSeq': seq,
+        });
+      case '/orders/summary':
+        final counts = <String, int>{};
+        for (final o in orders) {
+          counts[o.status] = (counts[o.status] ?? 0) + 1;
+        }
+        return FakeResponse(200, {
+          'counts': counts,
+          'total': orders.length,
           'syncSeq': seq,
         });
       case '/orders/changes':

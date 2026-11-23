@@ -1,8 +1,32 @@
 import 'package:drift/drift.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
+import 'package:inblack_orders/core/database/order_key.dart';
 import 'package:inblack_orders/core/database/tables.dart';
 
 part 'orders_dao.g.dart';
+
+class OrderListFilter {
+  const OrderListFilter({
+    this.statuses = const [],
+    this.ids,
+    this.search,
+    this.olderBound,
+    this.anchor,
+  });
+
+  final List<String> statuses;
+  final List<String>? ids;
+  final String? search;
+  final OrderKey? olderBound;
+  final OrderKey? anchor;
+
+  OrderListFilter copyWithoutAnchor() => OrderListFilter(
+    statuses: statuses,
+    ids: ids,
+    search: search,
+    olderBound: olderBound,
+  );
+}
 
 @DriftAccessor(tables: [Orders])
 class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
@@ -44,8 +68,15 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     )..addColumns([count])).map((row) => row.read(count) ?? 0).watchSingle();
   }
 
-  Stream<List<OrderRow>> watchLatest({int limit = 50}) {
+  Stream<List<OrderRow>> watchLatest({int limit = 50}) =>
+      watchList(const OrderListFilter(), limit: limit);
+
+  Stream<List<OrderRow>> watchList(
+    OrderListFilter filter, {
+    required int limit,
+  }) {
     return (select(orders)
+          ..where((o) => _predicate(o, filter))
           ..orderBy([
             (o) => OrderingTerm.desc(o.createdAt),
             (o) => OrderingTerm.desc(o.id),
@@ -53,6 +84,64 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
           ..limit(limit))
         .watch();
   }
+
+  Stream<int> watchNewerThan(OrderListFilter filter, OrderKey anchor) {
+    final count = orders.id.count();
+    final base = filter.copyWithoutAnchor();
+    return (selectOnly(orders)
+          ..addColumns([count])
+          ..where(_predicate(orders, base) & _newerThan(orders, anchor)))
+        .map((row) => row.read(count) ?? 0)
+        .watchSingle();
+  }
+
+  Future<Map<String, int>> localStatusCounts() async {
+    final count = orders.id.count();
+    final rows =
+        await (selectOnly(orders)
+              ..addColumns([orders.status, count])
+              ..groupBy([orders.status]))
+            .get();
+    return {
+      for (final r in rows) r.read(orders.status) ?? '': r.read(count) ?? 0,
+    };
+  }
+
+  Expression<bool> _predicate($OrdersTable o, OrderListFilter f) {
+    final parts = <Expression<bool>>[
+      if (f.statuses.isNotEmpty) o.status.isIn(f.statuses),
+    ];
+    final ids = f.ids;
+    if (ids != null) parts.add(o.id.isIn(ids));
+    final search = f.search?.trim().toLowerCase() ?? '';
+    if (search.isNotEmpty) {
+      final pattern = '%${_escapeLike(search)}%';
+      parts.add(
+        o.id.lower().like(pattern, escapeChar: r'\') |
+            o.primaryName.lower().like(pattern, escapeChar: r'\'),
+      );
+    }
+    final bound = f.olderBound;
+    if (bound != null) parts.add(_atOrNewer(o, bound));
+    final anchor = f.anchor;
+    if (anchor != null) parts.add(_newerThan(o, anchor).not());
+    return parts.isEmpty ? const Constant(true) : Expression.and(parts);
+  }
+
+  Expression<bool> _atOrNewer($OrdersTable o, OrderKey k) {
+    final ms = k.createdAt.millisecondsSinceEpoch;
+    return o.createdAt.isBiggerThanValue(ms) |
+        (o.createdAt.equals(ms) & o.id.isBiggerOrEqualValue(k.id));
+  }
+
+  Expression<bool> _newerThan($OrdersTable o, OrderKey k) {
+    final ms = k.createdAt.millisecondsSinceEpoch;
+    return o.createdAt.isBiggerThanValue(ms) |
+        (o.createdAt.equals(ms) & o.id.isBiggerThanValue(k.id));
+  }
+
+  static String _escapeLike(String s) =>
+      s.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
 
   Insertable<OrderRow> _fromExcluded(Orders excluded) => OrdersCompanion.custom(
     status: excluded.status,

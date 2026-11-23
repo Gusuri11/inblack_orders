@@ -28,9 +28,58 @@ class OrderSyncEngine {
   final DateTime Function() _clock;
 
   Future<void>? _running;
+  Future<void>? _loadingOlder;
+  Future<void> _queue = Future.value();
 
   Future<void> sync() {
-    return _running ??= _sync().whenComplete(() => _running = null);
+    return _running ??= _serial(_sync).whenComplete(() => _running = null);
+  }
+
+  Future<void> loadOlder() {
+    return _loadingOlder ??= _serial(_loadOlder)
+        .whenComplete(() => _loadingOlder = null);
+  }
+
+  Future<void> _serial(Future<void> Function() task) {
+    final next = _queue.then((_) => task());
+    _queue = next.then<void>((_) {}, onError: (Object _) {});
+    return next;
+  }
+
+  Future<void> _loadOlder() async {
+    final state = await _db.syncStateDao.read();
+    if (state.reachedEnd) return;
+    final cursor = state.olderCursor;
+    if (state.syncSeq == null || cursor == null) {
+      await _sync();
+      return;
+    }
+    final OrdersPage page;
+    try {
+      page = await _retry.run(
+        () => _api.getOrders(limit: _pageSize, cursor: cursor),
+      );
+    } on ApiException catch (e) {
+      if (e.code != 'invalid_cursor') rethrow;
+      await _fullSync();
+      return;
+    }
+    final last = page.items.isEmpty ? null : page.items.last;
+    await _db.transaction(() async {
+      await _db.ordersDao.upsertAll([
+        for (final o in page.items) o.toCompanion(),
+      ]);
+      await _db.syncStateDao.write(
+        SyncStateCompanion(
+          olderCursor: Value(page.nextCursor),
+          reachedEnd: Value(page.nextCursor == null),
+          oldestCreatedAt: last == null
+              ? const Value.absent()
+              : Value(last.createdAt.toUtc()),
+          oldestId: last == null ? const Value.absent() : Value(last.id),
+        ),
+      );
+    });
   }
 
   Future<void> _sync() async {
@@ -62,6 +111,7 @@ class OrderSyncEngine {
     } while (cursor != null && items.length < _preloadTarget);
 
     final seq = syncSeq;
+    final last = items.isEmpty ? null : items.last;
     await _db.transaction(() async {
       await _db.ordersDao.replaceAll([for (final o in items) o.toCompanion()]);
       await _db.syncStateDao.write(
@@ -70,6 +120,8 @@ class OrderSyncEngine {
           olderCursor: Value(cursor),
           reachedEnd: Value(cursor == null),
           lastSyncedAt: Value(_clock().toUtc()),
+          oldestCreatedAt: Value(last?.createdAt.toUtc()),
+          oldestId: Value(last?.id),
         ),
       );
     });

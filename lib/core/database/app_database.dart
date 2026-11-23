@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:inblack_orders/core/database/app_database.steps.dart';
 import 'package:inblack_orders/core/database/orders_dao.dart';
 import 'package:inblack_orders/core/database/sync_state_dao.dart';
 import 'package:inblack_orders/core/database/tables.dart';
@@ -22,11 +23,21 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
   );
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    onUpgrade: stepByStep(
+      from1To2: (m, schema) async {
+        await m.addColumn(schema.syncState, schema.syncState.oldestCreatedAt);
+        await m.addColumn(schema.syncState, schema.syncState.oldestId);
+        await m.database.customStatement(
+          'UPDATE sync_state SET sync_seq = NULL, older_cursor = NULL, '
+          'reached_end = 0',
+        );
+      },
+    ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

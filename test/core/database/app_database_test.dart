@@ -2,6 +2,8 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
+import 'package:inblack_orders/core/database/order_key.dart';
+import 'package:inblack_orders/core/database/orders_dao.dart';
 
 OrdersCompanion _row(
   String id, {
@@ -152,6 +154,99 @@ void main() {
       final s = await db.syncStateDao.read();
       expect(s.userId, 'u2');
       expect(s.syncSeq, isNull);
+    });
+  });
+
+  group('watchList', () {
+    setUp(() async {
+      await db.ordersDao.upsertAll([
+        for (var i = 0; i < 10; i++)
+          _row('ORD-$i', minute: i, status: i.isEven ? 'PAID' : 'COMPLETED'),
+        _row('ORD-X', minute: 20, status: 'ON_HOLD'),
+      ]);
+    });
+
+    Future<List<String>> ids(OrderListFilter f, {int limit = 50}) async =>
+        (await db.ordersDao.watchList(f, limit: limit).first)
+            .map((r) => r.id)
+            .toList();
+
+    test('newest first with limit', () async {
+      expect(await ids(const OrderListFilter(), limit: 3), [
+        'ORD-X',
+        'ORD-9',
+        'ORD-8',
+      ]);
+    });
+
+    test('filters by several statuses including unknown ones', () async {
+      final result = await ids(
+        const OrderListFilter(statuses: ['ON_HOLD', 'COMPLETED']),
+      );
+      expect(result, ['ORD-X', 'ORD-9', 'ORD-7', 'ORD-5', 'ORD-3', 'ORD-1']);
+    });
+
+    test('olderBound hides rows older than the loaded range', () async {
+      final bound = OrderKey(DateTime.utc(2026, 11, 1, 0, 7), 'ORD-7');
+      expect(await ids(OrderListFilter(olderBound: bound)), [
+        'ORD-X',
+        'ORD-9',
+        'ORD-8',
+        'ORD-7',
+      ]);
+    });
+
+    test('ids restricts to a search result set', () async {
+      expect(await ids(const OrderListFilter(ids: ['ORD-2', 'ORD-5'])), [
+        'ORD-5',
+        'ORD-2',
+      ]);
+    });
+
+    test(
+      'local search matches id and product name case-insensitively',
+      () async {
+        await db.ordersDao.upsertAll([
+          OrdersCompanion.insert(
+            id: 'ORD-GC',
+            status: 'PAID',
+            version: 1,
+            totalMinor: 1,
+            primaryName: const Value('Gift Card 100% บัตรของขวัญ'),
+            createdAt: DateTime.utc(2026),
+            updatedAt: DateTime.utc(2026),
+          ),
+        ]);
+        expect(await ids(const OrderListFilter(search: 'gift')), ['ORD-GC']);
+        expect(await ids(const OrderListFilter(search: 'ของขวัญ')), ['ORD-GC']);
+        expect(await ids(const OrderListFilter(search: '100%')), ['ORD-GC']);
+        expect(await ids(const OrderListFilter(search: 'ord-x')), ['ORD-X']);
+        expect(await ids(const OrderListFilter(search: '_')), isEmpty);
+      },
+    );
+
+    test('anchor hides newer rows and counts them separately', () async {
+      final anchor = OrderKey(DateTime.utc(2026, 11, 1, 0, 8), 'ORD-8');
+      final f = OrderListFilter(anchor: anchor);
+      expect(await ids(f, limit: 2), ['ORD-8', 'ORD-7']);
+      expect(await db.ordersDao.watchNewerThan(f, anchor).first, 2);
+      expect(
+        await db.ordersDao
+            .watchNewerThan(
+              OrderListFilter(statuses: const ['PAID'], anchor: anchor),
+              anchor,
+            )
+            .first,
+        0,
+      );
+    });
+
+    test('localStatusCounts groups by raw status', () async {
+      expect(await db.ordersDao.localStatusCounts(), {
+        'PAID': 5,
+        'COMPLETED': 5,
+        'ON_HOLD': 1,
+      });
     });
   });
 }

@@ -58,6 +58,9 @@ class SyncState extends Table {
   BoolColumn get reachedEnd => boolean().withDefault(const Constant(false))();
   IntColumn get lastSyncedAt =>
       integer().map(const EpochMillisConverter()).nullable()();
+  IntColumn get oldestCreatedAt =>
+      integer().map(const EpochMillisConverter()).nullable()();
+  TextColumn get oldestId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
