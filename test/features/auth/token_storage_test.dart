@@ -1,26 +1,31 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inblack_orders/core/database/user_data_store.dart';
 import 'package:inblack_orders/features/auth/data/auth_api.dart';
 import 'package:inblack_orders/features/auth/data/auth_models.dart';
 import 'package:inblack_orders/features/auth/data/auth_repository.dart';
+import 'package:inblack_orders/features/auth/data/session_manager.dart';
 import 'package:inblack_orders/features/auth/data/token_storage.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../helpers/memory_token_storage.dart';
 
 class _MockSecureStorage extends Mock implements FlutterSecureStorage;
 
 class _MockAuthApi extends Mock implements AuthApi;
 
-class _MemoryStorage implements TokenStorage {
-  StoredSession? value;
+class _RecordingUserData implements UserDataStore {
+  _RecordingUserData(this.storage);
+
+  final MemoryTokenStorage storage;
+  final calls = <String>[];
+  bool tokensSavedFirst = false;
 
   @override
-  Future<StoredSession?> read() async => value;
-
-  @override
-  Future<void> save(StoredSession session) async => value = session;
-
-  @override
-  Future<void> clear() async => value = null;
+  Future<void> prepareForUser(String userId) async {
+    tokensSavedFirst = storage.value != null;
+    calls.add(userId);
+  }
 }
 
 void main() {
@@ -91,9 +96,23 @@ void main() {
   });
 
   group('AuthRepository', () {
+    late _MockAuthApi api;
+    late MemoryTokenStorage storage;
+    late _RecordingUserData userData;
+    late AuthRepository repo;
+
+    setUp(() {
+      api = _MockAuthApi();
+      storage = MemoryTokenStorage();
+      userData = _RecordingUserData(storage);
+      repo = AuthRepository(
+        api: api,
+        session: SessionManager(api: api, storage: storage),
+        userData: userData,
+      );
+    });
+
     test('login persists the session and returns the user', () async {
-      final api = _MockAuthApi();
-      final storage = _MemoryStorage();
       const user = AuthUser(id: 'u1', username: 'alice', displayName: 'A');
       when(() => api.login(username: 'alice', password: 'pw')).thenAnswer(
         (_) async => const LoginResponse(
@@ -105,17 +124,16 @@ void main() {
         ),
       );
 
-      final repo = AuthRepository(api: api, storage: storage);
       final result = await repo.login(username: 'alice', password: 'pw');
 
       expect(result, user);
       expect(storage.value?.refreshToken, 'rt');
       expect(storage.value?.userId, 'u1');
+      expect(userData.calls, ['u1']);
+      expect(userData.tokensSavedFirst, isFalse);
     });
 
     test('failed login stores nothing', () async {
-      final api = _MockAuthApi();
-      final storage = _MemoryStorage();
       when(
         () => api.login(
           username: any(named: 'username'),
@@ -123,20 +141,19 @@ void main() {
         ),
       ).thenThrow(Exception('401'));
 
-      final repo = AuthRepository(api: api, storage: storage);
       await expectLater(
         repo.login(username: 'a', password: 'b'),
         throwsException,
       );
       expect(storage.value, isNull);
+      expect(userData.calls, isEmpty);
     });
 
     test('clearSession wipes the stored tokens', () async {
-      final storage = _MemoryStorage()
-        ..value = const StoredSession(accessToken: 'a', refreshToken: 'r');
-      final repo = AuthRepository(api: _MockAuthApi(), storage: storage);
+      storage.value = const StoredSession(accessToken: 'a', refreshToken: 'r');
       await repo.clearSession();
       expect(await repo.currentSession(), isNull);
+      expect(storage.value, isNull);
     });
   });
 }

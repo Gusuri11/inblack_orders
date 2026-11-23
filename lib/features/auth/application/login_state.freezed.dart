@@ -1,25 +1,11 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-// coverage:ignore-file
-// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
-// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'login_state.dart';
 
-// **************************************************************************
-// FreezedGenerator
-// **************************************************************************
 
-// GENERATED CODE - DO NOT MODIFY BY HAND
-// dart format off
 T _$identity<T>(T value) => value;
-/// @nodoc
 mixin _$LoginState {
 
- bool get isSubmitting; FieldError? get usernameError; FieldError? get passwordError; LoginFailure? get failure;/// Seconds left before another login attempt is allowed (429).
- int get retryAfterSeconds;/// Set once login succeeds.
- AuthUser? get user;
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
+ bool get isSubmitting; FieldError? get usernameError; FieldError? get passwordError; LoginFailure? get failure; int get retryAfterSeconds; AuthUser? get user;
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $LoginStateCopyWith<LoginState> get copyWith => _$LoginStateCopyWithImpl<LoginState>(this as LoginState, _$identity);
@@ -48,7 +34,6 @@ String toString() {
 
 }
 
-/// @nodoc
 abstract mixin class $LoginStateCopyWith<$Res>  {
   factory $LoginStateCopyWith(LoginState value, $Res Function(LoginState) _then) = _$LoginStateCopyWithImpl;
 @useResult
@@ -60,7 +45,6 @@ $Res call({
 $AuthUserCopyWith<$Res>? get user;
 
 }
-/// @nodoc
 class _$LoginStateCopyWithImpl<$Res>
     implements $LoginStateCopyWith<$Res> {
   _$LoginStateCopyWithImpl(this._self, this._then);
@@ -68,21 +52,17 @@ class _$LoginStateCopyWithImpl<$Res>
   final LoginState _self;
   final $Res Function(LoginState) _then;
 
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isSubmitting = null,Object? usernameError = freezed,Object? passwordError = freezed,Object? failure = freezed,Object? retryAfterSeconds = null,Object? user = freezed,}) {
   return _then(LoginState(
-isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
-as bool,usernameError: freezed == usernameError ? _self.usernameError : usernameError // ignore: cast_nullable_to_non_nullable
-as FieldError?,passwordError: freezed == passwordError ? _self.passwordError : passwordError // ignore: cast_nullable_to_non_nullable
-as FieldError?,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
-as LoginFailure?,retryAfterSeconds: null == retryAfterSeconds ? _self.retryAfterSeconds : retryAfterSeconds // ignore: cast_nullable_to_non_nullable
-as int,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting
+as bool,usernameError: freezed == usernameError ? _self.usernameError : usernameError
+as FieldError?,passwordError: freezed == passwordError ? _self.passwordError : passwordError
+as FieldError?,failure: freezed == failure ? _self.failure : failure
+as LoginFailure?,retryAfterSeconds: null == retryAfterSeconds ? _self.retryAfterSeconds : retryAfterSeconds
+as int,user: freezed == user ? _self.user : user
 as AuthUser?,
   ));
 }
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
 $AuthUserCopyWith<$Res>? get user {
@@ -97,19 +77,7 @@ $AuthUserCopyWith<$Res>? get user {
 }
 
 
-/// Adds pattern-matching-related methods to [LoginState].
 extension LoginStatePatterns on LoginState {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
 
 @optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LoginState value)?  $default,{required TResult orElse(),}){
 final _that = this;
@@ -120,18 +88,6 @@ return $default(_that);case _:
 
 }
 }
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
 
 @optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LoginState value)  $default,){
 final _that = this;
@@ -142,17 +98,6 @@ return $default(_that);case _:
 
 }
 }
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
 
 @optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LoginState value)?  $default,){
 final _that = this;
@@ -163,17 +108,6 @@ return $default(_that);case _:
 
 }
 }
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isSubmitting,  FieldError? usernameError,  FieldError? passwordError,  LoginFailure? failure,  int retryAfterSeconds,  AuthUser? user)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
@@ -183,18 +117,6 @@ return $default(_that.isSubmitting,_that.usernameError,_that.passwordError,_that
 
 }
 }
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isSubmitting,  FieldError? usernameError,  FieldError? passwordError,  LoginFailure? failure,  int retryAfterSeconds,  AuthUser? user)  $default,) {final _that = this;
 switch (_that) {
@@ -204,17 +126,6 @@ return $default(_that.isSubmitting,_that.usernameError,_that.passwordError,_that
 
 }
 }
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isSubmitting,  FieldError? usernameError,  FieldError? passwordError,  LoginFailure? failure,  int retryAfterSeconds,  AuthUser? user)?  $default,) {final _that = this;
 switch (_that) {
@@ -227,7 +138,6 @@ return $default(_that.isSubmitting,_that.usernameError,_that.passwordError,_that
 
 }
 
-/// @nodoc
 
 
 class _LoginState extends LoginState {
@@ -238,13 +148,9 @@ class _LoginState extends LoginState {
 @override final  FieldError? usernameError;
 @override final  FieldError? passwordError;
 @override final  LoginFailure? failure;
-/// Seconds left before another login attempt is allowed (429).
 @override@JsonKey() final  int retryAfterSeconds;
-/// Set once login succeeds.
 @override final  AuthUser? user;
 
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 _$LoginStateCopyWith<_LoginState> get copyWith => __$LoginStateCopyWithImpl<_LoginState>(this, _$identity);
@@ -270,7 +176,6 @@ String toString() {
 
 }
 
-/// @nodoc
 abstract mixin class _$LoginStateCopyWith<$Res> implements $LoginStateCopyWith<$Res> {
   factory _$LoginStateCopyWith(_LoginState value, $Res Function(_LoginState) _then) = __$LoginStateCopyWithImpl;
 @override @useResult
@@ -282,7 +187,6 @@ $Res call({
 @override $AuthUserCopyWith<$Res>? get user;
 
 }
-/// @nodoc
 class __$LoginStateCopyWithImpl<$Res>
     implements _$LoginStateCopyWith<$Res> {
   __$LoginStateCopyWithImpl(this._self, this._then);
@@ -290,22 +194,18 @@ class __$LoginStateCopyWithImpl<$Res>
   final _LoginState _self;
   final $Res Function(_LoginState) _then;
 
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? isSubmitting = null,Object? usernameError = freezed,Object? passwordError = freezed,Object? failure = freezed,Object? retryAfterSeconds = null,Object? user = freezed,}) {
   return _then(_LoginState(
-isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
-as bool,usernameError: freezed == usernameError ? _self.usernameError : usernameError // ignore: cast_nullable_to_non_nullable
-as FieldError?,passwordError: freezed == passwordError ? _self.passwordError : passwordError // ignore: cast_nullable_to_non_nullable
-as FieldError?,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
-as LoginFailure?,retryAfterSeconds: null == retryAfterSeconds ? _self.retryAfterSeconds : retryAfterSeconds // ignore: cast_nullable_to_non_nullable
-as int,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting
+as bool,usernameError: freezed == usernameError ? _self.usernameError : usernameError
+as FieldError?,passwordError: freezed == passwordError ? _self.passwordError : passwordError
+as FieldError?,failure: freezed == failure ? _self.failure : failure
+as LoginFailure?,retryAfterSeconds: null == retryAfterSeconds ? _self.retryAfterSeconds : retryAfterSeconds
+as int,user: freezed == user ? _self.user : user
 as AuthUser?,
   ));
 }
 
-/// Create a copy of LoginState
-/// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
 $AuthUserCopyWith<$Res>? get user {
@@ -319,4 +219,3 @@ $AuthUserCopyWith<$Res>? get user {
 }
 }
 
-// dart format on
