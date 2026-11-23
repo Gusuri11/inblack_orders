@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tokens and the order database must never leave the device via cloud
-     backup or device-to-device transfer (Android 12+). -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" />

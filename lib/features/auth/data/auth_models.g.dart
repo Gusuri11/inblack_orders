@@ -1,10 +1,6 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'auth_models.dart';
 
-// **************************************************************************
-// JsonSerializableGenerator
-// **************************************************************************
 
 _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
   id: json['id'] as String,
