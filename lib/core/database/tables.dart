@@ -46,6 +46,7 @@ class Outbox extends Table {
   IntColumn get nextAttemptAt =>
       integer().map(const EpochMillisConverter()).nullable()();
   TextColumn get lastError => text().nullable()();
+  TextColumn get serverSnapshot => text().nullable()();
   IntColumn get createdAt => integer().map(const EpochMillisConverter())();
 }
 

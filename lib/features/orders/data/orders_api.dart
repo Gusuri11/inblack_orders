@@ -62,6 +62,50 @@ class OrdersApi {
     }
   }
 
+  Future<OrderDetail> cancel(
+    String id, {
+    required int ifMatch,
+    required String reason,
+    required String idempotencyKey,
+  }) async {
+    final json = await _post(
+      '/orders/${Uri.encodeComponent(id)}/cancel',
+      {'reason': reason},
+      headers: {'If-Match': '$ifMatch', 'Idempotency-Key': idempotencyKey},
+    );
+    return OrderDetail.fromJson(json);
+  }
+
+  Future<OrderNote> addNote(
+    String id, {
+    required String text,
+    required String idempotencyKey,
+  }) async {
+    final json = await _post(
+      '/orders/${Uri.encodeComponent(id)}/notes',
+      {'text': text},
+      headers: {'Idempotency-Key': idempotencyKey},
+    );
+    return OrderNote.fromJson(json);
+  }
+
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> body, {
+    required Map<String, String> headers,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        path,
+        data: body,
+        options: Options(headers: headers),
+      );
+      return response.data ?? const {};
+    } on DioException catch (e) {
+      throw toApiException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> _get(
     String path, [
     Map<String, dynamic>? query,

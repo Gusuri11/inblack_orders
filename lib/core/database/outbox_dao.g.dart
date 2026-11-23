@@ -1,0 +1,14 @@
+
+part of 'outbox_dao.dart';
+
+mixin _$OutboxDaoMixin on DatabaseAccessor<AppDatabase> {
+  $OutboxTable get outbox => attachedDatabase.outbox;
+  OutboxDaoManager get managers => OutboxDaoManager(this);
+}
+
+class OutboxDaoManager {
+  final _$OutboxDaoMixin _db;
+  OutboxDaoManager(this._db);
+  $$OutboxTableTableManager get outbox =>
+      $$OutboxTableTableManager(_db.attachedDatabase, _db.outbox);
+}

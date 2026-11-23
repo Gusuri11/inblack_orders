@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:inblack_orders/core/database/app_database.steps.dart';
 import 'package:inblack_orders/core/database/orders_dao.dart';
+import 'package:inblack_orders/core/database/outbox_dao.dart';
 import 'package:inblack_orders/core/database/sync_state_dao.dart';
 import 'package:inblack_orders/core/database/tables.dart';
 import 'package:inblack_orders/core/database/user_data_store.dart';
@@ -10,7 +11,7 @@ part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [Orders, Outbox, SyncState, OrderDetails],
-  daos: [OrdersDao, SyncStateDao],
+  daos: [OrdersDao, SyncStateDao, OutboxDao],
 )
 class AppDatabase extends _$AppDatabase implements UserDataStore {
   AppDatabase(super.e);
@@ -23,7 +24,7 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
   );
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,6 +40,9 @@ class AppDatabase extends _$AppDatabase implements UserDataStore {
       },
       from2To3: (m, schema) async {
         await m.createTable(schema.orderDetails);
+      },
+      from3To4: (m, schema) async {
+        await m.addColumn(schema.outbox, schema.outbox.serverSnapshot);
       },
     ),
     beforeOpen: (details) async {

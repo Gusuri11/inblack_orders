@@ -90,6 +90,11 @@ class FakeOrdersServer {
   int retainFrom = 0;
   final List<FakeResponse> failNext = [];
   final List<Object?> extraChanges = [];
+  final Map<String, ({String fp, FakeResponse response})> idem = {};
+  final List<String> seenKeys = [];
+  int loseResponses = 0;
+  int cancelsApplied = 0;
+  int notesCreated = 0;
 
   FakeOrder byId(String id) => orders.firstWhere((o) => o.id == id);
 
@@ -132,6 +137,58 @@ class FakeOrdersServer {
     final custom = intercept?.call(r);
     if (custom != null) return custom;
     return _handle(r);
+  }
+
+  FakeResponse _mutate(RequestOptions r, String id, String action) {
+    final key = r.headers['Idempotency-Key'] as String?;
+    if (key == null || key.length < 8) {
+      return const FakeResponse(400, {'error': 'idempotency_key_required'});
+    }
+    seenKeys.add(key);
+    final body = (r.data as Map<String, dynamic>?) ?? const {};
+    final ifMatch = r.headers['If-Match'];
+    final fp = '$action:$id:$ifMatch:${body['reason'] ?? body['text']}';
+    final prev = idem[key];
+    if (prev != null) {
+      if (prev.fp != fp) {
+        return const FakeResponse(422, {'error': 'idempotency_key_reused'});
+      }
+      return prev.response;
+    }
+    final o = orders.where((x) => x.id == id).firstOrNull;
+    final FakeResponse response;
+    if (o == null) {
+      response = const FakeResponse(404, {'error': 'order_not_found'});
+    } else if (action == 'notes') {
+      o.notes.add('${body['text']}');
+      notesCreated++;
+      response = FakeResponse(201, {
+        'id': 'n_${o.notes.length - 1}',
+        'text': body['text'],
+        'author': 'customer',
+        'createdAt': o.createdAt.toIso8601String(),
+      });
+    } else if ('$ifMatch' != '${o.version}') {
+      response = FakeResponse(409, {
+        'error': 'version_conflict',
+        'current': o.toDetailJson(),
+      });
+    } else if (o.status != 'PENDING' && o.status != 'PAID') {
+      response = FakeResponse(422, {
+        'error': 'not_cancellable',
+        'current': o.toDetailJson(),
+      });
+    } else {
+      update(id, 'CANCELLED');
+      cancelsApplied++;
+      response = FakeResponse(200, o.toDetailJson());
+    }
+    idem[key] = (fp: fp, response: response);
+    if (loseResponses > 0 && response.status < 300) {
+      loseResponses--;
+      throwNetworkError();
+    }
+    return response;
   }
 
   FakeResponse _handle(RequestOptions r) {
@@ -207,6 +264,10 @@ class FakeOrdersServer {
           'hasMore': all.length > limit,
           'syncSeq': seq,
         });
+    }
+    final mutation = RegExp(r'^/orders/([^/]+)/(cancel|notes)$').firstMatch(r.path);
+    if (mutation != null && r.method == 'POST') {
+      return _mutate(r, Uri.decodeComponent(mutation.group(1) ?? ''), mutation.group(2) ?? '');
     }
     final detailMatch = RegExp(r'^/orders/([^/]+)$').firstMatch(r.path);
     if (detailMatch != null) {
