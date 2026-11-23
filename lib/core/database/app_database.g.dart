@@ -1,4 +1,3 @@
-
 part of 'app_database.dart';
 
 class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {

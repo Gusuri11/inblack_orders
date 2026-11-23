@@ -1,4 +1,3 @@
-
 part of 'sync_state_dao.dart';
 
 mixin _$SyncStateDaoMixin on DatabaseAccessor<AppDatabase> {

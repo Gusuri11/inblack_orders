@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/app/deep_links.dart';
 import 'package:inblack_orders/app/router.dart';
 import 'package:inblack_orders/features/realtime/presentation/realtime_lifecycle.dart';
 
@@ -16,8 +17,9 @@ class InBlackOrdersApp extends ConsumerWidget {
         brightness: Brightness.dark,
       ),
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) =>
-          RealtimeLifecycle(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => DeepLinkListener(
+        child: RealtimeLifecycle(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

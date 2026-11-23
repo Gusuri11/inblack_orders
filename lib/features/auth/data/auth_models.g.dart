@@ -1,6 +1,4 @@
-
 part of 'auth_models.dart';
-
 
 _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
   id: json['id'] as String,

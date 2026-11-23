@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
 import 'package:inblack_orders/core/network/error_messages.dart';
-import 'package:inblack_orders/features/auth/application/auth_providers.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_controller.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_state.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
@@ -18,7 +17,9 @@ import 'package:inblack_orders/features/realtime/application/realtime_providers.
 import 'package:inblack_orders/features/realtime/presentation/connection_indicator.dart';
 
 class OrdersListScreen extends ConsumerStatefulWidget {
-  const OrdersListScreen({super.key});
+  const OrdersListScreen({this.statusFilter, super.key});
+
+  final String? statusFilter;
 
   @override
   ConsumerState<OrdersListScreen> createState() => _OrdersListScreenState();
@@ -27,7 +28,6 @@ class OrdersListScreen extends ConsumerStatefulWidget {
 class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   final _scroll = ScrollController();
   final _search = TextEditingController();
-  StreamSubscription<Object>? _sessionSub;
   RealtimeControl? _realtime;
   Timer? _ticker;
   bool _atTop = true;
@@ -39,9 +39,6 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    _sessionSub = ref.read(sessionManagerProvider).sessionEnded.listen((_) {
-      if (mounted) context.go('/login');
-    });
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -52,10 +49,36 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyFilter();
+  }
+
+  @override
+  void didUpdateWidget(OrdersListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.statusFilter != widget.statusFilter) _applyFilter();
+  }
+
+  String? _appliedFilter;
+
+  void _applyFilter() {
+    final raw = widget.statusFilter;
+    if (raw == _appliedFilter) return;
+    _appliedFilter = raw;
+    if (raw == null) return;
+    final statuses = raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+    unawaited(_controller.setStatuses(statuses));
+  }
+
+  @override
   void dispose() {
     unawaited(_realtime?.setEnabled(enabled: false));
     _ticker?.cancel();
-    unawaited(_sessionSub?.cancel());
     _scroll.dispose();
     _search.dispose();
     super.dispose();

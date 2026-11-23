@@ -265,9 +265,14 @@ class FakeOrdersServer {
           'syncSeq': seq,
         });
     }
-    final mutation = RegExp(r'^/orders/([^/]+)/(cancel|notes)$').firstMatch(r.path);
+    final mutation = RegExp(r'^/orders/([^/]+)/(cancel|notes)$')
+        .firstMatch(r.path);
     if (mutation != null && r.method == 'POST') {
-      return _mutate(r, Uri.decodeComponent(mutation.group(1) ?? ''), mutation.group(2) ?? '');
+      return _mutate(
+        r,
+        Uri.decodeComponent(mutation.group(1) ?? ''),
+        mutation.group(2) ?? '',
+      );
     }
     final detailMatch = RegExp(r'^/orders/([^/]+)$').firstMatch(r.path);
     if (detailMatch != null) {

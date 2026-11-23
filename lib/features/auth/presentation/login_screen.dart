@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:inblack_orders/features/auth/application/auth_status.dart';
 import 'package:inblack_orders/features/auth/application/login_controller.dart';
 import 'package:inblack_orders/features/auth/application/login_state.dart';
+import 'package:inblack_orders/features/auth/data/session_manager.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({this.from, super.key});
+
+  final String? from;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -36,8 +39,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(loginControllerProvider.select((s) => s.user), (_, user) {
-      if (user != null) context.go('/orders');
+      if (user != null) ref.read(authStatusProvider.notifier).signedIn();
     });
+    final endReason = ref.watch(authStatusProvider).endReason;
 
     final state = ref.watch(loginControllerProvider);
     final theme = Theme.of(context);
@@ -68,6 +72,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
+                    if (endReason != null) ...[
+                      const SizedBox(height: 16),
+                      _SessionEndedNotice(
+                        reason: endReason,
+                        resumes: widget.from != null,
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     TextField(
                       controller: _username,
@@ -172,6 +183,38 @@ class _FailureMessage extends StatelessWidget {
             child: Text(message, style: TextStyle(color: color)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SessionEndedNotice extends StatelessWidget {
+  const _SessionEndedNotice({required this.reason, required this.resumes});
+
+  final SessionEndReason reason;
+  final bool resumes;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final message = switch (reason) {
+      SessionEndReason.refreshTokenReused ||
+      SessionEndReason.socketRevoked ||
+      SessionEndReason.tokenRevoked =>
+        'เพื่อความปลอดภัย เซสชันของคุณถูกยกเลิก กรุณาเข้าสู่ระบบอีกครั้ง',
+      _ => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
+    };
+    return Semantics(
+      liveRegion: true,
+      child: Card(
+        color: scheme.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(
+            resumes ? '$message แล้วเราจะพาคุณกลับไปหน้าเดิม' : message,
+            style: TextStyle(color: scheme.onSecondaryContainer),
+          ),
+        ),
       ),
     );
   }

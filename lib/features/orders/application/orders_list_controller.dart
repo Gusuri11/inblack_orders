@@ -126,6 +126,14 @@ class OrdersListController extends Notifier<OrdersListState> {
 
   Future<void> clearStatuses() => _setStatuses({});
 
+  Future<void> setStatuses(Set<String> statuses) {
+    if (statuses.length == state.statuses.length &&
+        statuses.every(state.statuses.contains)) {
+      return Future.value();
+    }
+    return _setStatuses(statuses);
+  }
+
   void setAtTop({required bool atTop}) {
     if (atTop && _anchor != null) {
       _anchor = null;

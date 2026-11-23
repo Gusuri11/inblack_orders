@@ -1,6 +1,4 @@
-
 part of 'order_models.dart';
-
 
 _PrimaryItem _$PrimaryItemFromJson(Map<String, dynamic> json) => _PrimaryItem(
   sku: json['sku'] as String,
