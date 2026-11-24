@@ -49,3 +49,5 @@ app.*.map.json
 
 # Personal notes (not submitted)
 CODE_GUIDE.md
+
+/android/build/
