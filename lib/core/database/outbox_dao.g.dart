@@ -1,3 +1,4 @@
+
 part of 'outbox_dao.dart';
 
 mixin _$OutboxDaoMixin on DatabaseAccessor<AppDatabase> {

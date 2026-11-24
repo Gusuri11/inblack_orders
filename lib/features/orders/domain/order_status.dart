@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:inblack_orders/l10n/app_localizations.dart';
 
 enum StatusTone { amber, blue, purple, green, red, teal, neutral }
 
 class OrderStatusInfo {
   const OrderStatusInfo({
     required this.raw,
-    required this.label,
     required this.icon,
     required this.tone,
     this.known = true,
   });
 
   final String raw;
-  final String label;
   final IconData icon;
   final StatusTone tone;
   final bool known;
+
+  String label(AppLocalizations l) => switch (raw) {
+    OrderStatuses.pending => l.statusPending,
+    OrderStatuses.paid => l.statusPaid,
+    OrderStatuses.inProgress => l.statusInProgress,
+    OrderStatuses.completed => l.statusCompleted,
+    OrderStatuses.cancelled => l.statusCancelled,
+    OrderStatuses.refunded => l.statusRefunded,
+    _ => raw,
+  };
 }
 
 abstract final class OrderStatuses {
@@ -41,43 +50,36 @@ abstract final class OrderStatuses {
   static OrderStatusInfo info(String raw) => switch (raw) {
     pending => const OrderStatusInfo(
       raw: pending,
-      label: 'รอชำระเงิน',
       icon: Icons.hourglass_empty,
       tone: StatusTone.amber,
     ),
     paid => const OrderStatusInfo(
       raw: paid,
-      label: 'ชำระเงินแล้ว',
       icon: Icons.payments_outlined,
       tone: StatusTone.blue,
     ),
     inProgress => const OrderStatusInfo(
       raw: inProgress,
-      label: 'กำลังดำเนินการ',
       icon: Icons.autorenew,
       tone: StatusTone.purple,
     ),
     completed => const OrderStatusInfo(
       raw: completed,
-      label: 'สำเร็จ',
       icon: Icons.check_circle_outline,
       tone: StatusTone.green,
     ),
     cancelled => const OrderStatusInfo(
       raw: cancelled,
-      label: 'ยกเลิกแล้ว',
       icon: Icons.cancel_outlined,
       tone: StatusTone.red,
     ),
     refunded => const OrderStatusInfo(
       raw: refunded,
-      label: 'คืนเงินแล้ว',
       icon: Icons.undo,
       tone: StatusTone.teal,
     ),
     _ => OrderStatusInfo(
       raw: raw,
-      label: raw,
       icon: Icons.help_outline,
       tone: StatusTone.neutral,
       known: false,

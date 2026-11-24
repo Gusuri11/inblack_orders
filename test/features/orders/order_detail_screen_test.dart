@@ -6,6 +6,7 @@ import 'package:inblack_orders/features/orders/application/order_detail_controll
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/presentation/order_detail_screen.dart';
 import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
+import 'package:inblack_orders/l10n/app_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import '../../helpers/fake_outbox_actions.dart';
@@ -73,6 +74,9 @@ void main() {
           shareTextProvider.overrideWithValue((text) async => shared.add(text)),
         ],
         child: MaterialApp(
+          locale: const Locale('th'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context)
                 .copyWith(textScaler: TextScaler.linear(textScale)),

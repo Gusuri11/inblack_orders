@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
+import 'package:inblack_orders/core/notifications/order_notifier.dart';
 import 'package:inblack_orders/features/orders/data/order_row_mapper.dart';
 import 'package:inblack_orders/features/realtime/data/realtime_event.dart';
 
@@ -14,7 +16,10 @@ class OrderEventApplier implements OrderEventSink {
     required this._db,
     required this._sync,
     this._gapDelay = const Duration(seconds: 2),
+    this.onStatusChanges,
   });
+
+  Future<void> Function(List<StatusChange> changes)? onStatusChanges;
 
   final AppDatabase _db;
   final Future<void> Function() _sync;
@@ -45,12 +50,28 @@ class OrderEventApplier implements OrderEventSink {
         await _db.ordersDao.deleteByIds([id]);
       case OrderUpdated():
         if (deletedSeq != null && deletedSeq > event.seq) return;
-        await _db.ordersDao.applyStatusUpdate(
+        final applied = await _db.ordersDao.applyStatusUpdate(
           id: event.id,
           status: event.status,
           version: event.version,
           updatedAt: event.updatedAt,
         );
+        final notify = onStatusChanges;
+        if (applied && notify != null) {
+          final row = await _db.ordersDao.findById(event.id);
+          try {
+            await notify([
+              StatusChange(
+                orderId: event.id,
+                status: event.status,
+                version: event.version,
+                productName: row?.primaryName,
+              ),
+            ]);
+          } on Object catch (e) {
+            debugPrint('notify failed: $e');
+          }
+        }
       case OrderCreated(:final order):
         if (deletedSeq != null && deletedSeq > event.seq) return;
         await _db.ordersDao.upsertAll([order.toCompanion()]);

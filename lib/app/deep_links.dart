@@ -4,6 +4,8 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inblack_orders/app/router.dart';
+import 'package:inblack_orders/core/notifications/local_notifications.dart';
+import 'package:inblack_orders/core/notifications/notification_providers.dart';
 
 String? deepLinkToLocation(Uri uri) {
   if (uri.scheme != 'inblack') return null;
@@ -61,7 +63,63 @@ class AppLinkSource implements LinkSource {
   Stream<Uri> get links => _links.uriLinkStream;
 }
 
-final linkSourceProvider = Provider<LinkSource>((ref) => AppLinkSource());
+class NotificationLinkSource implements LinkSource {
+  NotificationLinkSource(this._presenter);
+
+  final LocalNotificationPresenter _presenter;
+
+  @override
+  Future<Uri?> initial() async {
+    final payload = await _presenter.launchPayload();
+    return payload == null ? null : Uri.tryParse(payload);
+  }
+
+  @override
+  Stream<Uri> get links =>
+      _presenter.taps.map(Uri.tryParse).where((u) => u != null).cast<Uri>();
+}
+
+class MergedLinkSource implements LinkSource {
+  MergedLinkSource(this._sources);
+
+  final List<LinkSource> _sources;
+
+  @override
+  Future<Uri?> initial() async {
+    for (final s in _sources) {
+      final uri = await s.initial();
+      if (uri != null) return uri;
+    }
+    return null;
+  }
+
+  @override
+  Stream<Uri> get links {
+    final controller = StreamController<Uri>();
+    final subs = <StreamSubscription<Uri>>[];
+    controller
+      ..onListen = () {
+        for (final s in _sources) {
+          subs.add(
+            s.links.listen(controller.add, onError: controller.addError),
+          );
+        }
+      }
+      ..onCancel = () async {
+        for (final sub in subs) {
+          await sub.cancel();
+        }
+      };
+    return controller.stream;
+  }
+}
+
+final linkSourceProvider = Provider<LinkSource>(
+  (ref) => MergedLinkSource([
+    AppLinkSource(),
+    NotificationLinkSource(ref.watch(notificationPresenterProvider)),
+  ]),
+);
 
 class DeepLinkListener extends ConsumerStatefulWidget {
   const DeepLinkListener({required this.child, super.key});

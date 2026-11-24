@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/auth/application/auth_status.dart';
 import 'package:inblack_orders/features/auth/application/login_controller.dart';
 import 'package:inblack_orders/features/auth/application/login_state.dart';
@@ -45,6 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final state = ref.watch(loginControllerProvider);
     final theme = Theme.of(context);
+    final l = context.l10n;
 
     return Scaffold(
       body: SafeArea(
@@ -68,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'เข้าสู่ระบบเพื่อติดตามคำสั่งซื้อ',
+                      l.loginSubtitle,
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -87,11 +89,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.next,
                       autocorrect: false,
                       decoration: InputDecoration(
-                        labelText: 'ชื่อผู้ใช้',
+                        labelText: l.usernameLabel,
                         border: const OutlineInputBorder(),
                         errorText: state.usernameError == null
                             ? null
-                            : 'กรุณากรอกชื่อผู้ใช้',
+                            : l.usernameRequired,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -103,13 +105,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        labelText: 'รหัสผ่าน',
+                        labelText: l.passwordLabel,
                         border: const OutlineInputBorder(),
                         errorText: state.passwordError == null
                             ? null
-                            : 'กรุณากรอกรหัสผ่าน',
+                            : l.passwordRequired,
                         suffixIcon: IconButton(
-                          tooltip: _obscure ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน',
+                          tooltip: _obscure ? l.showPassword : l.hidePassword,
                           icon: Icon(
                             _obscure
                                 ? Icons.visibility_outlined
@@ -135,8 +137,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           : Text(
                               state.isLockedOut
-                                  ? 'ลองใหม่ได้ใน ${state.retryAfterSeconds} วินาที'
-                                  : 'เข้าสู่ระบบ',
+                                  ? l.loginRetryIn(state.retryAfterSeconds)
+                                  : l.loginButton,
                             ),
                     ),
                   ],
@@ -160,15 +162,13 @@ class _FailureMessage extends StatelessWidget {
     final failure = state.failure;
     if (failure == null) return const SizedBox.shrink();
 
+    final l = context.l10n;
     final message = switch (failure) {
-      LoginFailure.invalidCredentials => 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
-      LoginFailure.rateLimited =>
-        'ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอ '
-            '${state.retryAfterSeconds} วินาที',
-      LoginFailure.network =>
-        'ไม่สามารถเชื่อมต่อได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',
-      LoginFailure.server => 'เซิร์ฟเวอร์ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง',
-      LoginFailure.unknown => 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+      LoginFailure.invalidCredentials => l.loginInvalid,
+      LoginFailure.rateLimited => l.loginTooMany(state.retryAfterSeconds),
+      LoginFailure.network => l.errorNetwork,
+      LoginFailure.server => l.errorServer,
+      LoginFailure.unknown => l.errorGeneric,
     };
 
     final color = Theme.of(context).colorScheme.error;
@@ -197,12 +197,12 @@ class _SessionEndedNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
     final message = switch (reason) {
       SessionEndReason.refreshTokenReused ||
       SessionEndReason.socketRevoked ||
-      SessionEndReason.tokenRevoked =>
-        'เพื่อความปลอดภัย เซสชันของคุณถูกยกเลิก กรุณาเข้าสู่ระบบอีกครั้ง',
-      _ => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
+      SessionEndReason.tokenRevoked => l.sessionRevoked,
+      _ => l.sessionExpired,
     };
     return Semantics(
       liveRegion: true,
@@ -211,7 +211,7 @@ class _SessionEndedNotice extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Text(
-            resumes ? '$message แล้วเราจะพาคุณกลับไปหน้าเดิม' : message,
+            resumes ? l.sessionResume(message) : message,
             style: TextStyle(color: scheme.onSecondaryContainer),
           ),
         ),

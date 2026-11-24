@@ -1,3 +1,4 @@
+
 part of 'orders_dao.dart';
 
 mixin _$OrdersDaoMixin on DatabaseAccessor<AppDatabase> {

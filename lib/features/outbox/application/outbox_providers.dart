@@ -6,6 +6,7 @@ import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/outbox/data/outbox_processor.dart';
 import 'package:inblack_orders/features/outbox/data/outbox_repository.dart';
+import 'package:inblack_orders/l10n/app_localizations.dart';
 
 final outboxRepositoryProvider = Provider<OutboxRepository>(
   (ref) => OutboxRepository(db: ref.watch(appDatabaseProvider)),
@@ -94,20 +95,20 @@ class _OutboxActions implements OutboxActions {
   }
 }
 
-String outboxErrorMessage(String? code) => switch (code) {
-  'network' => 'ส่งไม่สำเร็จเพราะเชื่อมต่อเซิร์ฟเวอร์ไม่ได้',
-  'not_cancellable' => 'คำสั่งซื้อนี้ยกเลิกไม่ได้แล้ว เพราะสถานะเปลี่ยนไป',
-  'order_not_found' => 'ไม่พบคำสั่งซื้อนี้แล้ว อาจถูกลบไปก่อนส่ง',
-  'validation_error' => 'ข้อมูลไม่ถูกต้อง กรุณาแก้ไขแล้วลองใหม่',
-  'version_conflict' => 'สถานะคำสั่งซื้อเปลี่ยนไประหว่างรอส่ง',
-  'idempotency_key_reused' => 'คำขอนี้ซ้ำกับคำขอก่อนหน้า',
-  'unauthorized' => 'รอเข้าสู่ระบบใหม่',
-  null => 'รอส่ง',
-  _ => 'ส่งไม่สำเร็จ ($code)',
+String outboxErrorMessage(AppLocalizations l, String? code) => switch (code) {
+  'network' => l.outboxNetwork,
+  'not_cancellable' => l.outboxNotCancellable,
+  'order_not_found' => l.outboxNotFound,
+  'validation_error' => l.outboxValidation,
+  'version_conflict' => l.outboxConflict,
+  'idempotency_key_reused' => l.outboxDuplicate,
+  'unauthorized' => l.outboxUnauthorized,
+  null => l.outboxQueued,
+  _ => l.outboxFailedCode(code),
 };
 
-String outboxKindLabel(String kind) => switch (kind) {
-  'cancel' => 'ยกเลิกคำสั่งซื้อ',
-  'note' => 'เพิ่มโน้ต',
+String outboxKindLabel(AppLocalizations l, String kind) => switch (kind) {
+  'cancel' => l.kindCancel,
+  'note' => l.kindNote,
   _ => kind,
 };

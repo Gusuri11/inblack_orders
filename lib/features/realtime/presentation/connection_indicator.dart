@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 import 'package:inblack_orders/features/realtime/data/realtime_client.dart';
 
@@ -12,20 +13,24 @@ class ConnectionIndicator extends ConsumerWidget {
         ref.watch(connectionStatusProvider).value ?? ConnectionStatus.offline;
     final scheme = Theme.of(context).colorScheme;
     final (label, icon, color) = switch (status) {
-      ConnectionStatus.live => ('Live', Icons.circle, const Color(0xFF1B873F)),
+      ConnectionStatus.live => (
+        context.l10n.connLive,
+        Icons.circle,
+        const Color(0xFF1B873F),
+      ),
       ConnectionStatus.reconnecting => (
-        'กำลังเชื่อมต่อใหม่…',
+        context.l10n.connReconnecting,
         Icons.sync,
         scheme.onSurfaceVariant,
       ),
       ConnectionStatus.offline => (
-        'ออฟไลน์',
+        context.l10n.connOffline,
         Icons.cloud_off,
         scheme.onSurfaceVariant,
       ),
     };
     return Semantics(
-      label: 'สถานะการเชื่อมต่อ: $label',
+      label: context.l10n.connSemantics(label),
       liveRegion: true,
       excludeSemantics: true,
       child: Padding(

@@ -62,6 +62,16 @@ class OrderDetails extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('NotifiedRow')
+class NotifiedLog extends Table {
+  TextColumn get orderId => text()();
+  IntColumn get version => integer()();
+  IntColumn get notifiedAt => integer().map(const EpochMillisConverter())();
+
+  @override
+  Set<Column> get primaryKey => {orderId, version};
+}
+
 @DataClassName('SyncStateRow')
 class SyncState extends Table {
   IntColumn get id => integer().withDefault(const Constant(0))();
@@ -74,6 +84,8 @@ class SyncState extends Table {
   IntColumn get oldestCreatedAt =>
       integer().map(const EpochMillisConverter()).nullable()();
   TextColumn get oldestId => text().nullable()();
+  IntColumn get foregroundUntil =>
+      integer().map(const EpochMillisConverter()).nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/status_badge.dart';
 
@@ -21,12 +22,19 @@ class OrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final name = order.primaryItem?.name ?? 'ไม่มีรายการสินค้า';
-    final extra = order.lineCount > 1
-        ? ' (+${order.lineCount - 1} รายการ)'
-        : '';
-    final amount = Formatters.money(order.totalMinor, currency: order.currency);
-    final time = Formatters.orderTime(order.createdAt, now: now);
+    final l = context.l10n;
+    final name = order.primaryItem?.name ?? l.noProduct;
+    final extra = order.lineCount > 1 ? l.moreItems(order.lineCount - 1) : '';
+    final amount = Formatters.money(
+      order.totalMinor,
+      currency: order.currency,
+      locale: context.languageCode,
+    );
+    final time = Formatters.orderTime(
+      order.createdAt,
+      now: now,
+      locale: context.languageCode,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -140,15 +148,16 @@ class ProductThumbnail extends StatelessWidget {
 }
 
 class PendingChip extends StatelessWidget {
-  const PendingChip({super.key, this.label = 'รอส่ง'});
+  const PendingChip({super.key, this.label});
 
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final text = label ?? context.l10n.pending;
     return Semantics(
-      label: 'สถานะการส่ง: $label',
+      label: context.l10n.sendState(text),
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -168,7 +177,7 @@ class PendingChip extends StatelessWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  label,
+                  text,
                   style: Theme.of(context).textTheme.labelSmall
                       ?.copyWith(color: scheme.onSurfaceVariant),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/domain/order_status.dart';
 
@@ -38,7 +39,7 @@ class StatusFilterBar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(_withCount('ทั้งหมด', summary?.total)),
+              label: Text(_withCount(context.l10n.filterAll, summary?.total)),
               selected: selected.isEmpty,
               onSelected: (_) => onClear(),
             ),
@@ -50,7 +51,7 @@ class StatusFilterBar extends StatelessWidget {
                 avatar: Icon(OrderStatuses.info(status).icon, size: 18),
                 label: Text(
                   _withCount(
-                    OrderStatuses.info(status).label,
+                    OrderStatuses.info(status).label(context.l10n),
                     counts == null ? null : (counts[status] ?? 0),
                   ),
                 ),

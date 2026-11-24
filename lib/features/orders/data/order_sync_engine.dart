@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/network/api_exception.dart';
 import 'package:inblack_orders/core/network/retry_policy.dart';
+import 'package:inblack_orders/core/notifications/order_notifier.dart';
 import 'package:inblack_orders/features/orders/data/order_models.dart';
 import 'package:inblack_orders/features/orders/data/order_row_mapper.dart';
 import 'package:inblack_orders/features/orders/data/orders_api.dart';
@@ -16,8 +18,11 @@ class OrderSyncEngine {
     this._preloadTarget = 200,
     this._pageSize = 50,
     this._changesPageSize = 500,
+    this.onStatusChanges,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
+
+  Future<void> Function(List<StatusChange> changes)? onStatusChanges;
 
   final OrdersApi _api;
   final AppDatabase _db;
@@ -151,10 +156,15 @@ class OrderSyncEngine {
         }
       }
 
+      final upserts = [for (final o in latest.values) ?o];
+      final before = {
+        for (final r in await _db.ordersDao.findByIds(upserts.map((o) => o.id)))
+          r.id: r,
+      };
+
       await _db.transaction(() async {
         await _db.ordersDao.upsertAll([
-          for (final o in latest.values)
-            if (o != null) o.toCompanion(),
+          for (final o in upserts) o.toCompanion(),
         ]);
         await _db.ordersDao.deleteByIds([
           for (final e in latest.entries)
@@ -167,6 +177,26 @@ class OrderSyncEngine {
           ),
         );
       });
+
+      final changed = [
+        for (final o in upserts)
+          if (before[o.id] case final old?
+              when old.version < o.version && old.status != o.status)
+            StatusChange(
+              orderId: o.id,
+              status: o.status,
+              version: o.version,
+              productName: o.primaryItem?.name,
+            ),
+      ];
+      final notify = onStatusChanges;
+      if (changed.isNotEmpty && notify != null) {
+        try {
+          await notify(changed);
+        } on Object catch (e) {
+          debugPrint('notify failed: $e');
+        }
+      }
 
       next = page.nextSince;
       if (!page.hasMore) return;

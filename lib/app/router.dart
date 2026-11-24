@@ -7,6 +7,7 @@ import 'package:inblack_orders/features/auth/presentation/login_screen.dart';
 import 'package:inblack_orders/features/orders/presentation/order_detail_screen.dart';
 import 'package:inblack_orders/features/orders/presentation/orders_list_screen.dart';
 import 'package:inblack_orders/features/outbox/presentation/outbox_screen.dart';
+import 'package:inblack_orders/features/settings/settings_screen.dart';
 
 class _AuthRefresh extends ChangeNotifier {
   void ping() => notifyListeners();
@@ -36,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             OrdersListScreen(statusFilter: state.uri.queryParameters['status']),
         routes: [
           GoRoute(path: 'outbox', builder: (_, _) => const OutboxScreen()),
+          GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
           GoRoute(
             path: ':id',
             builder: (_, state) =>

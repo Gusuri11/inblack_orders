@@ -24,6 +24,17 @@ class AuthApi {
     return RefreshResponse.fromJson(json);
   }
 
+  Future<void> logout(String refreshToken) async {
+    try {
+      await _dio.post<void>(
+        '/auth/logout',
+        data: {'refreshToken': refreshToken},
+      );
+    } on DioException catch (e) {
+      throw toApiException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body,

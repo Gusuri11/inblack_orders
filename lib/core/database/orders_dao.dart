@@ -100,6 +100,22 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     });
   }
 
+  Future<int> countByStatuses(Iterable<String> statuses) async {
+    final count = orders.id.count();
+    final query = selectOnly(orders)
+      ..addColumns([count])
+      ..where(orders.status.isIn(statuses.toList()));
+    final row = await query.getSingle();
+    final value = row.read(count);
+    return value ?? 0;
+  }
+
+  Future<List<OrderRow>> findByIds(Iterable<String> ids) {
+    final list = ids.toList();
+    if (list.isEmpty) return Future.value(const []);
+    return (select(orders)..where((o) => o.id.isIn(list))).get();
+  }
+
   Future<OrderRow?> findById(String id) =>
       (select(orders)..where((o) => o.id.equals(id))).getSingleOrNull();
 

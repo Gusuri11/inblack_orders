@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inblack_orders/core/config/app_config.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/core/network/dio_factory.dart';
 import 'package:inblack_orders/core/network/network_providers.dart';
@@ -28,7 +27,7 @@ final sessionManagerProvider = Provider<SessionManager>((ref) {
 });
 
 final authenticatedDioProvider = Provider<Dio>((ref) {
-  final dio = createDio(baseUrl: AppConfig.baseUrl);
+  final dio = createDio(baseUrl: ref.watch(baseUrlProvider));
   dio.interceptors.add(
     AuthInterceptor(session: ref.watch(sessionManagerProvider), retryDio: dio),
   );

@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/outbox_dao.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/domain/order_status.dart';
 import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
 import 'package:inblack_orders/features/outbox/data/outbox_repository.dart';
+import 'package:inblack_orders/l10n/app_localizations.dart';
 
 class OutboxScreen extends ConsumerWidget {
   const OutboxScreen({super.key});
@@ -17,22 +19,23 @@ class OutboxScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(outboxItemsProvider).value ?? const <OutboxRow>[];
     final actions = ref.read(outboxActionsProvider);
+    final l = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('รายการรอส่ง'),
+        title: Text(l.outboxTitle),
         actions: [
           IconButton(
-            tooltip: 'ส่งตอนนี้',
+            tooltip: l.sendNow,
             icon: const Icon(Icons.send),
             onPressed: actions.drain,
           ),
         ],
       ),
       body: items.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('ไม่มีรายการที่รอส่ง', textAlign: TextAlign.center),
+                padding: const EdgeInsets.all(24),
+                child: Text(l.outboxEmpty, textAlign: TextAlign.center),
               ),
             )
           : ListView.separated(
@@ -52,18 +55,19 @@ class _OutboxTile extends StatelessWidget {
   final OutboxRow row;
   final OutboxActions actions;
 
-  String get _stateLabel => switch (row.state) {
-    OutboxStates.sending => 'กำลังส่ง…',
-    OutboxStates.failed => 'ส่งไม่สำเร็จ',
-    OutboxStates.conflict => 'สถานะเปลี่ยน ต้องตัดสินใจ',
-    _ => row.lastError == null ? 'รอส่ง' : 'รอส่งใหม่',
+  String _stateLabel(AppLocalizations l) => switch (row.state) {
+    OutboxStates.sending => l.stateSending,
+    OutboxStates.failed => l.stateFailed,
+    OutboxStates.conflict => l.stateConflict,
+    _ => row.lastError == null ? l.stateQueued : l.stateRequeued,
   };
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = context.l10n;
     final detail = row.kind == OutboxKinds.cancel
-        ? 'เหตุผล: ${row.data['reason'] ?? ''}'
+        ? l.reasonPrefix('${row.data['reason'] ?? ''}')
         : '${row.data['text'] ?? ''}';
     final snapshotStatus = row.snapshot?['status'] as String?;
     final canCancelAgain =
@@ -86,11 +90,11 @@ class _OutboxTile extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  '${outboxKindLabel(row.kind)} · ${row.orderId}',
+                  '${outboxKindLabel(l, row.kind)} · ${row.orderId}',
                   style: theme.textTheme.titleSmall,
                 ),
                 Text(
-                  _stateLabel,
+                  _stateLabel(l),
                   style: TextStyle(
                     color: row.needsAttention
                         ? theme.colorScheme.error
@@ -105,13 +109,21 @@ class _OutboxTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 row.state == OutboxStates.conflict && snapshotStatus != null
-                    ? 'สถานะล่าสุดจากเซิร์ฟเวอร์: ${OrderStatuses.info(snapshotStatus).label}'
-                    : outboxErrorMessage(row.lastError),
+                    ? l.latestServerStatus(
+                        OrderStatuses.info(snapshotStatus).label(l),
+                      )
+                    : outboxErrorMessage(l, row.lastError),
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
             Text(
-              'สร้างเมื่อ ${Formatters.dateTime(row.createdAt)} · พยายาม ${row.attempts} ครั้ง',
+              l.createdAttempts(
+                Formatters.dateTime(
+                  row.createdAt,
+                  locale: context.languageCode,
+                ),
+                row.attempts,
+              ),
               style: theme.textTheme.bodySmall,
             ),
             if (row.needsAttention)
@@ -123,16 +135,16 @@ class _OutboxTile extends StatelessWidget {
                     if (canCancelAgain)
                       TextButton(
                         onPressed: () => unawaited(actions.cancelAgain(row.id)),
-                        child: const Text('ยกเลิกอีกครั้ง'),
+                        child: Text(l.cancelAgain),
                       ),
                     if (canRetry)
                       TextButton(
                         onPressed: () => unawaited(actions.retry(row.id)),
-                        child: const Text('ลองใหม่'),
+                        child: Text(l.retry),
                       ),
                     TextButton(
                       onPressed: () => unawaited(actions.discard(row.id)),
-                      child: const Text('ทิ้ง'),
+                      child: Text(l.discard),
                     ),
                   ],
                 ),
@@ -153,8 +165,8 @@ class OutboxAction extends ConsumerWidget {
     if (items.isEmpty) return const SizedBox.shrink();
     final attention = ref.watch(outboxAttentionCountProvider);
     final label = attention > 0
-        ? 'รายการส่งไม่สำเร็จ $attention รายการ'
-        : 'รายการรอส่ง ${items.length} รายการ';
+        ? context.l10n.outboxFailedCount(attention)
+        : context.l10n.outboxPendingCount(items.length);
     return IconButton(
       tooltip: label,
       onPressed: () => unawaited(context.push('/orders/outbox')),

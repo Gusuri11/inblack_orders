@@ -1,3 +1,4 @@
+
 part of 'app_database.dart';
 
 class $OrdersTable extends Orders with TableInfo<$OrdersTable, OrderRow> {
@@ -1523,6 +1524,15 @@ class $SyncStateTable extends SyncState
     requiredDuringInsert: false,
   );
   @override
+  late final GeneratedColumnWithTypeConverter<DateTime?, int> foregroundUntil =
+      GeneratedColumn<int>(
+        'foreground_until',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      ).withConverter<DateTime?>($SyncStateTable.$converterforegroundUntiln);
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     userId,
@@ -1532,6 +1542,7 @@ class $SyncStateTable extends SyncState
     lastSyncedAt,
     oldestCreatedAt,
     oldestId,
+    foregroundUntil,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1626,6 +1637,12 @@ class $SyncStateTable extends SyncState
         DriftSqlType.string,
         data['${effectivePrefix}oldest_id'],
       ),
+      foregroundUntil: $SyncStateTable.$converterforegroundUntiln.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}foreground_until'],
+        ),
+      ),
     );
   }
 
@@ -1642,6 +1659,10 @@ class $SyncStateTable extends SyncState
       const EpochMillisConverter();
   static TypeConverter<DateTime?, int?> $converteroldestCreatedAtn =
       NullAwareTypeConverter.wrap($converteroldestCreatedAt);
+  static TypeConverter<DateTime, int> $converterforegroundUntil =
+      const EpochMillisConverter();
+  static TypeConverter<DateTime?, int?> $converterforegroundUntiln =
+      NullAwareTypeConverter.wrap($converterforegroundUntil);
 }
 
 class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
@@ -1653,6 +1674,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
   final DateTime? lastSyncedAt;
   final DateTime? oldestCreatedAt;
   final String? oldestId;
+  final DateTime? foregroundUntil;
   const SyncStateRow({
     required this.id,
     this.userId,
@@ -1662,6 +1684,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     this.lastSyncedAt,
     this.oldestCreatedAt,
     this.oldestId,
+    this.foregroundUntil,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1690,6 +1713,11 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     if (!nullToAbsent || oldestId != null) {
       map['oldest_id'] = Variable<String>(oldestId);
     }
+    if (!nullToAbsent || foregroundUntil != null) {
+      map['foreground_until'] = Variable<int>(
+        $SyncStateTable.$converterforegroundUntiln.toSql(foregroundUntil),
+      );
+    }
     return map;
   }
 
@@ -1715,6 +1743,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       oldestId: oldestId == null && nullToAbsent
           ? const Value.absent()
           : Value(oldestId),
+      foregroundUntil: foregroundUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foregroundUntil),
     );
   }
 
@@ -1732,6 +1763,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
       oldestCreatedAt: serializer.fromJson<DateTime?>(json['oldestCreatedAt']),
       oldestId: serializer.fromJson<String?>(json['oldestId']),
+      foregroundUntil: serializer.fromJson<DateTime?>(json['foregroundUntil']),
     );
   }
   @override
@@ -1746,6 +1778,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
       'oldestCreatedAt': serializer.toJson<DateTime?>(oldestCreatedAt),
       'oldestId': serializer.toJson<String?>(oldestId),
+      'foregroundUntil': serializer.toJson<DateTime?>(foregroundUntil),
     };
   }
 
@@ -1758,6 +1791,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     Value<DateTime?> lastSyncedAt = const Value.absent(),
     Value<DateTime?> oldestCreatedAt = const Value.absent(),
     Value<String?> oldestId = const Value.absent(),
+    Value<DateTime?> foregroundUntil = const Value.absent(),
   }) => SyncStateRow(
     id: id ?? this.id,
     userId: userId.present ? userId.value : this.userId,
@@ -1769,6 +1803,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
         ? oldestCreatedAt.value
         : this.oldestCreatedAt,
     oldestId: oldestId.present ? oldestId.value : this.oldestId,
+    foregroundUntil: foregroundUntil.present
+        ? foregroundUntil.value
+        : this.foregroundUntil,
   );
   SyncStateRow copyWithCompanion(SyncStateCompanion data) {
     return SyncStateRow(
@@ -1788,6 +1825,9 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           ? data.oldestCreatedAt.value
           : this.oldestCreatedAt,
       oldestId: data.oldestId.present ? data.oldestId.value : this.oldestId,
+      foregroundUntil: data.foregroundUntil.present
+          ? data.foregroundUntil.value
+          : this.foregroundUntil,
     );
   }
 
@@ -1801,7 +1841,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           ..write('reachedEnd: $reachedEnd, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('oldestCreatedAt: $oldestCreatedAt, ')
-          ..write('oldestId: $oldestId')
+          ..write('oldestId: $oldestId, ')
+          ..write('foregroundUntil: $foregroundUntil')
           ..write(')'))
         .toString();
   }
@@ -1816,6 +1857,7 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
     lastSyncedAt,
     oldestCreatedAt,
     oldestId,
+    foregroundUntil,
   );
   @override
   bool operator ==(Object other) =>
@@ -1828,7 +1870,8 @@ class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
           other.reachedEnd == this.reachedEnd &&
           other.lastSyncedAt == this.lastSyncedAt &&
           other.oldestCreatedAt == this.oldestCreatedAt &&
-          other.oldestId == this.oldestId);
+          other.oldestId == this.oldestId &&
+          other.foregroundUntil == this.foregroundUntil);
 }
 
 class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
@@ -1840,6 +1883,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
   final Value<DateTime?> lastSyncedAt;
   final Value<DateTime?> oldestCreatedAt;
   final Value<String?> oldestId;
+  final Value<DateTime?> foregroundUntil;
   const SyncStateCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1849,6 +1893,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     this.lastSyncedAt = const Value.absent(),
     this.oldestCreatedAt = const Value.absent(),
     this.oldestId = const Value.absent(),
+    this.foregroundUntil = const Value.absent(),
   });
   SyncStateCompanion.insert({
     this.id = const Value.absent(),
@@ -1859,6 +1904,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     this.lastSyncedAt = const Value.absent(),
     this.oldestCreatedAt = const Value.absent(),
     this.oldestId = const Value.absent(),
+    this.foregroundUntil = const Value.absent(),
   });
   static Insertable<SyncStateRow> custom({
     Expression<int>? id,
@@ -1869,6 +1915,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Expression<int>? lastSyncedAt,
     Expression<int>? oldestCreatedAt,
     Expression<String>? oldestId,
+    Expression<int>? foregroundUntil,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1879,6 +1926,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (oldestCreatedAt != null) 'oldest_created_at': oldestCreatedAt,
       if (oldestId != null) 'oldest_id': oldestId,
+      if (foregroundUntil != null) 'foreground_until': foregroundUntil,
     });
   }
 
@@ -1891,6 +1939,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     Value<DateTime?>? lastSyncedAt,
     Value<DateTime?>? oldestCreatedAt,
     Value<String?>? oldestId,
+    Value<DateTime?>? foregroundUntil,
   }) {
     return SyncStateCompanion(
       id: id ?? this.id,
@@ -1901,6 +1950,7 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       oldestCreatedAt: oldestCreatedAt ?? this.oldestCreatedAt,
       oldestId: oldestId ?? this.oldestId,
+      foregroundUntil: foregroundUntil ?? this.foregroundUntil,
     );
   }
 
@@ -1935,6 +1985,11 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
     if (oldestId.present) {
       map['oldest_id'] = Variable<String>(oldestId.value);
     }
+    if (foregroundUntil.present) {
+      map['foreground_until'] = Variable<int>(
+        $SyncStateTable.$converterforegroundUntiln.toSql(foregroundUntil.value),
+      );
+    }
     return map;
   }
 
@@ -1948,7 +2003,8 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
           ..write('reachedEnd: $reachedEnd, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('oldestCreatedAt: $oldestCreatedAt, ')
-          ..write('oldestId: $oldestId')
+          ..write('oldestId: $oldestId, ')
+          ..write('foregroundUntil: $foregroundUntil')
           ..write(')'))
         .toString();
   }
@@ -2306,6 +2362,275 @@ class OrderDetailsCompanion extends UpdateCompanion<OrderDetailRow> {
   }
 }
 
+class $NotifiedLogTable extends NotifiedLog
+    with TableInfo<$NotifiedLogTable, NotifiedRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotifiedLogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _orderIdMeta = const VerificationMeta(
+    'orderId',
+  );
+  @override
+  late final GeneratedColumn<String> orderId = GeneratedColumn<String>(
+    'order_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<DateTime, int> notifiedAt =
+      GeneratedColumn<int>(
+        'notified_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<DateTime>($NotifiedLogTable.$converternotifiedAt);
+  @override
+  List<GeneratedColumn> get $columns => [orderId, version, notifiedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notified_log';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotifiedRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('order_id')) {
+      context.handle(
+        _orderIdMeta,
+        orderId.isAcceptableOrUnknown(data['order_id']!, _orderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_orderIdMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {orderId, version};
+  @override
+  NotifiedRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotifiedRow(
+      orderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}order_id'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      notifiedAt: $NotifiedLogTable.$converternotifiedAt.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}notified_at'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $NotifiedLogTable createAlias(String alias) {
+    return $NotifiedLogTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<DateTime, int> $converternotifiedAt =
+      const EpochMillisConverter();
+}
+
+class NotifiedRow extends DataClass implements Insertable<NotifiedRow> {
+  final String orderId;
+  final int version;
+  final DateTime notifiedAt;
+  const NotifiedRow({
+    required this.orderId,
+    required this.version,
+    required this.notifiedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['order_id'] = Variable<String>(orderId);
+    map['version'] = Variable<int>(version);
+    {
+      map['notified_at'] = Variable<int>(
+        $NotifiedLogTable.$converternotifiedAt.toSql(notifiedAt),
+      );
+    }
+    return map;
+  }
+
+  NotifiedLogCompanion toCompanion(bool nullToAbsent) {
+    return NotifiedLogCompanion(
+      orderId: Value(orderId),
+      version: Value(version),
+      notifiedAt: Value(notifiedAt),
+    );
+  }
+
+  factory NotifiedRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotifiedRow(
+      orderId: serializer.fromJson<String>(json['orderId']),
+      version: serializer.fromJson<int>(json['version']),
+      notifiedAt: serializer.fromJson<DateTime>(json['notifiedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'orderId': serializer.toJson<String>(orderId),
+      'version': serializer.toJson<int>(version),
+      'notifiedAt': serializer.toJson<DateTime>(notifiedAt),
+    };
+  }
+
+  NotifiedRow copyWith({String? orderId, int? version, DateTime? notifiedAt}) =>
+      NotifiedRow(
+        orderId: orderId ?? this.orderId,
+        version: version ?? this.version,
+        notifiedAt: notifiedAt ?? this.notifiedAt,
+      );
+  NotifiedRow copyWithCompanion(NotifiedLogCompanion data) {
+    return NotifiedRow(
+      orderId: data.orderId.present ? data.orderId.value : this.orderId,
+      version: data.version.present ? data.version.value : this.version,
+      notifiedAt: data.notifiedAt.present
+          ? data.notifiedAt.value
+          : this.notifiedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotifiedRow(')
+          ..write('orderId: $orderId, ')
+          ..write('version: $version, ')
+          ..write('notifiedAt: $notifiedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(orderId, version, notifiedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotifiedRow &&
+          other.orderId == this.orderId &&
+          other.version == this.version &&
+          other.notifiedAt == this.notifiedAt);
+}
+
+class NotifiedLogCompanion extends UpdateCompanion<NotifiedRow> {
+  final Value<String> orderId;
+  final Value<int> version;
+  final Value<DateTime> notifiedAt;
+  final Value<int> rowid;
+  const NotifiedLogCompanion({
+    this.orderId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.notifiedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotifiedLogCompanion.insert({
+    required String orderId,
+    required int version,
+    required DateTime notifiedAt,
+    this.rowid = const Value.absent(),
+  }) : orderId = Value(orderId),
+       version = Value(version),
+       notifiedAt = Value(notifiedAt);
+  static Insertable<NotifiedRow> custom({
+    Expression<String>? orderId,
+    Expression<int>? version,
+    Expression<int>? notifiedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (orderId != null) 'order_id': orderId,
+      if (version != null) 'version': version,
+      if (notifiedAt != null) 'notified_at': notifiedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotifiedLogCompanion copyWith({
+    Value<String>? orderId,
+    Value<int>? version,
+    Value<DateTime>? notifiedAt,
+    Value<int>? rowid,
+  }) {
+    return NotifiedLogCompanion(
+      orderId: orderId ?? this.orderId,
+      version: version ?? this.version,
+      notifiedAt: notifiedAt ?? this.notifiedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (orderId.present) {
+      map['order_id'] = Variable<String>(orderId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (notifiedAt.present) {
+      map['notified_at'] = Variable<int>(
+        $NotifiedLogTable.$converternotifiedAt.toSql(notifiedAt.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotifiedLogCompanion(')
+          ..write('orderId: $orderId, ')
+          ..write('version: $version, ')
+          ..write('notifiedAt: $notifiedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2313,6 +2638,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $OrderDetailsTable orderDetails = $OrderDetailsTable(this);
+  late final $NotifiedLogTable notifiedLog = $NotifiedLogTable(this);
   late final Index ordersCreatedIdx = Index(
     'orders_created_idx',
     'CREATE INDEX orders_created_idx ON orders (created_at, id)',
@@ -2337,6 +2663,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     outbox,
     syncState,
     orderDetails,
+    notifiedLog,
     ordersCreatedIdx,
     ordersStatusIdx,
     outboxOrderIdx,
@@ -3035,6 +3362,7 @@ typedef $$SyncStateTableCreateCompanionBuilder = SyncStateCompanion Function({
   Value<DateTime?> lastSyncedAt,
   Value<DateTime?> oldestCreatedAt,
   Value<String?> oldestId,
+  Value<DateTime?> foregroundUntil,
 });
 typedef $$SyncStateTableUpdateCompanionBuilder = SyncStateCompanion Function({
   Value<int> id,
@@ -3045,6 +3373,7 @@ typedef $$SyncStateTableUpdateCompanionBuilder = SyncStateCompanion Function({
   Value<DateTime?> lastSyncedAt,
   Value<DateTime?> oldestCreatedAt,
   Value<String?> oldestId,
+  Value<DateTime?> foregroundUntil,
 });
 
 class $$SyncStateTableFilterComposer
@@ -3097,6 +3426,12 @@ class $$SyncStateTableFilterComposer
     column: $table.oldestId,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<DateTime?, DateTime, int>
+  get foregroundUntil => $composableBuilder(
+    column: $table.foregroundUntil,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$SyncStateTableOrderingComposer
@@ -3147,6 +3482,11 @@ class $$SyncStateTableOrderingComposer
     column: $table.oldestId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get foregroundUntil => $composableBuilder(
+    column: $table.foregroundUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncStateTableAnnotationComposer
@@ -3191,6 +3531,12 @@ class $$SyncStateTableAnnotationComposer
 
   GeneratedColumn<String> get oldestId =>
       $composableBuilder(column: $table.oldestId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DateTime?, int> get foregroundUntil =>
+      $composableBuilder(
+        column: $table.foregroundUntil,
+        builder: (column) => column,
+      );
 }
 
 class $$SyncStateTableTableManager
@@ -3232,6 +3578,7 @@ class $$SyncStateTableTableManager
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<DateTime?> oldestCreatedAt = const Value.absent(),
                 Value<String?> oldestId = const Value.absent(),
+                Value<DateTime?> foregroundUntil = const Value.absent(),
               }) => SyncStateCompanion(
                 id: id,
                 userId: userId,
@@ -3241,6 +3588,7 @@ class $$SyncStateTableTableManager
                 lastSyncedAt: lastSyncedAt,
                 oldestCreatedAt: oldestCreatedAt,
                 oldestId: oldestId,
+                foregroundUntil: foregroundUntil,
               ),
           createCompanionCallback:
               ({
@@ -3252,6 +3600,7 @@ class $$SyncStateTableTableManager
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<DateTime?> oldestCreatedAt = const Value.absent(),
                 Value<String?> oldestId = const Value.absent(),
+                Value<DateTime?> foregroundUntil = const Value.absent(),
               }) => SyncStateCompanion.insert(
                 id: id,
                 userId: userId,
@@ -3261,6 +3610,7 @@ class $$SyncStateTableTableManager
                 lastSyncedAt: lastSyncedAt,
                 oldestCreatedAt: oldestCreatedAt,
                 oldestId: oldestId,
+                foregroundUntil: foregroundUntil,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -3506,6 +3856,181 @@ typedef $$OrderDetailsTableProcessedTableManager =
       OrderDetailRow,
       PrefetchHooks Function()
     >;
+typedef $$NotifiedLogTableCreateCompanionBuilder =
+    NotifiedLogCompanion Function({
+      required String orderId,
+      required int version,
+      required DateTime notifiedAt,
+      Value<int> rowid,
+    });
+typedef $$NotifiedLogTableUpdateCompanionBuilder =
+    NotifiedLogCompanion Function({
+      Value<String> orderId,
+      Value<int> version,
+      Value<DateTime> notifiedAt,
+      Value<int> rowid,
+    });
+
+class $$NotifiedLogTableFilterComposer
+    extends Composer<_$AppDatabase, $NotifiedLogTable> {
+  $$NotifiedLogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<DateTime, DateTime, int> get notifiedAt =>
+      $composableBuilder(
+        column: $table.notifiedAt,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+}
+
+class $$NotifiedLogTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotifiedLogTable> {
+  $$NotifiedLogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get notifiedAt => $composableBuilder(
+    column: $table.notifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotifiedLogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotifiedLogTable> {
+  $$NotifiedLogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get orderId =>
+      $composableBuilder(column: $table.orderId, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DateTime, int> get notifiedAt =>
+      $composableBuilder(
+        column: $table.notifiedAt,
+        builder: (column) => column,
+      );
+}
+
+class $$NotifiedLogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotifiedLogTable,
+          NotifiedRow,
+          $$NotifiedLogTableFilterComposer,
+          $$NotifiedLogTableOrderingComposer,
+          $$NotifiedLogTableAnnotationComposer,
+          $$NotifiedLogTableCreateCompanionBuilder,
+          $$NotifiedLogTableUpdateCompanionBuilder,
+          (
+            NotifiedRow,
+            BaseReferences<_$AppDatabase, $NotifiedLogTable, NotifiedRow>,
+          ),
+          NotifiedRow,
+          PrefetchHooks Function()
+        > {
+  $$NotifiedLogTableTableManager(_$AppDatabase db, $NotifiedLogTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotifiedLogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotifiedLogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotifiedLogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> orderId = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<DateTime> notifiedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotifiedLogCompanion(
+                orderId: orderId,
+                version: version,
+                notifiedAt: notifiedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String orderId,
+                required int version,
+                required DateTime notifiedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => NotifiedLogCompanion.insert(
+                orderId: orderId,
+                version: version,
+                notifiedAt: notifiedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NotifiedLogTable, NotifiedRow>(table),
+                  BaseReferences<_$AppDatabase, $NotifiedLogTable, NotifiedRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotifiedLogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotifiedLogTable,
+      NotifiedRow,
+      $$NotifiedLogTableFilterComposer,
+      $$NotifiedLogTableOrderingComposer,
+      $$NotifiedLogTableAnnotationComposer,
+      $$NotifiedLogTableCreateCompanionBuilder,
+      $$NotifiedLogTableUpdateCompanionBuilder,
+      (
+        NotifiedRow,
+        BaseReferences<_$AppDatabase, $NotifiedLogTable, NotifiedRow>,
+      ),
+      NotifiedRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3518,4 +4043,6 @@ class $AppDatabaseManager {
       $$SyncStateTableTableManager(_db, _db.syncState);
   $$OrderDetailsTableTableManager get orderDetails =>
       $$OrderDetailsTableTableManager(_db, _db.orderDetails);
+  $$NotifiedLogTableTableManager get notifiedLog =>
+      $$NotifiedLogTableTableManager(_db, _db.notifiedLog);
 }

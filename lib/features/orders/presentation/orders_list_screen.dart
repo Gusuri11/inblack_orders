@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/format/formatters.dart';
 import 'package:inblack_orders/core/network/error_messages.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_controller.dart';
 import 'package:inblack_orders/features/orders/application/orders_list_state.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
@@ -15,6 +17,7 @@ import 'package:inblack_orders/features/outbox/application/outbox_providers.dart
 import 'package:inblack_orders/features/outbox/presentation/outbox_screen.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 import 'package:inblack_orders/features/realtime/presentation/connection_indicator.dart';
+import 'package:inblack_orders/features/settings/settings_screen.dart';
 
 class OrdersListScreen extends ConsumerStatefulWidget {
   const OrdersListScreen({this.statusFilter, super.key});
@@ -99,7 +102,11 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
     final failure = await _controller.refresh();
     if (!mounted || failure == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('รีเฟรชไม่สำเร็จ: ${friendlyError(failure)}')),
+      SnackBar(
+        content: Text(
+          context.l10n.refreshFailed(friendlyError(context.l10n, failure)),
+        ),
+      ),
     );
   }
 
@@ -122,8 +129,16 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('คำสั่งซื้อ'),
-        actions: const [OutboxAction(), ConnectionIndicator()],
+        title: Text(context.l10n.ordersTitle),
+        actions: [
+          const OutboxAction(),
+          const ConnectionIndicator(),
+          IconButton(
+            tooltip: context.l10n.settingsOpen,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => unawaited(context.push('/orders/settings')),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -146,6 +161,10 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
             onToggle: (s) => unawaited(_controller.toggleStatus(s)),
             onClear: () => unawaited(_controller.clearStatuses()),
           ),
+          NotificationPrompt(
+            supported:
+                state.rows.isNotEmpty && (Platform.isAndroid || Platform.isIOS),
+          ),
           if (state.showLocalResultsNotice) const _LocalResultsNotice(),
           Expanded(
             child: Stack(
@@ -163,7 +182,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
                       child: FilledButton.tonalIcon(
                         onPressed: _showNewest,
                         icon: const Icon(Icons.arrow_upward),
-                        label: Text('มี ${state.newCount} รายการใหม่'),
+                        label: Text(context.l10n.newItems(state.newCount)),
                       ),
                     ),
                   ),
@@ -177,13 +196,13 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
 
   Widget _buildBody(OrdersListState state, DateTime now) {
     if (state.showInitialLoading) {
-      return const _FullScreenMessage(
+      return _FullScreenMessage(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('กำลังโหลดคำสั่งซื้อ…'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(context.l10n.loadingOrders),
           ],
         ),
       );
@@ -192,7 +211,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
     if (error != null) {
       return _FullScreenMessage(
         child: _ErrorView(
-          message: friendlyError(error),
+          message: friendlyError(context.l10n, error),
           onRetry: () => unawaited(_controller.retry()),
         ),
       );
@@ -246,14 +265,14 @@ class _SearchField extends StatelessWidget {
         onChanged: onChanged,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'ค้นหาเลขคำสั่งซื้อ, Player ID, ชื่อสินค้า',
+          hintText: context.l10n.searchHint,
           prefixIcon: const Icon(Icons.search),
           border: const OutlineInputBorder(),
           isDense: true,
           suffixIcon: value.text.isEmpty
               ? null
               : IconButton(
-                  tooltip: 'ล้างคำค้น',
+                  tooltip: context.l10n.clearSearch,
                   icon: const Icon(Icons.close),
                   onPressed: onClear,
                 ),
@@ -273,8 +292,10 @@ class _OfflineBanner extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final last = lastSyncedAt;
     final text = last == null
-        ? 'ออฟไลน์'
-        : 'ออฟไลน์ · อัปเดตล่าสุดเมื่อ ${Formatters.dateTime(last)}';
+        ? context.l10n.offline
+        : context.l10n.offlineUpdated(
+            Formatters.dateTime(last, locale: context.languageCode),
+          );
     return Semantics(
       liveRegion: true,
       child: Material(
@@ -317,7 +338,7 @@ class _LocalResultsNotice extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'แสดงผลจากข้อมูลในเครื่อง (ออฟไลน์) อาจไม่ครบทุกรายการ',
+              context.l10n.localResults,
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ),
@@ -372,7 +393,7 @@ class _ErrorView extends StatelessWidget {
         FilledButton(
           onPressed: onRetry,
           style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
-          child: const Text('ลองใหม่'),
+          child: Text(context.l10n.retry),
         ),
       ],
     );
@@ -388,11 +409,11 @@ class _EmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     final String message;
     if (state.activeQuery.isNotEmpty) {
-      message = 'ไม่พบคำสั่งซื้อที่ตรงกับ “${state.activeQuery}”';
+      message = context.l10n.emptySearch(state.activeQuery);
     } else if (state.statuses.isNotEmpty) {
-      message = 'ไม่มีคำสั่งซื้อในสถานะที่เลือก';
+      message = context.l10n.emptyFilter;
     } else {
-      message = 'ยังไม่มีคำสั่งซื้อ';
+      message = context.l10n.emptyAll;
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -424,14 +445,14 @@ class _ListFooter extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'โหลดเพิ่มไม่สำเร็จ: ${friendlyError(error)}',
+              context.l10n.loadMoreFailed(friendlyError(context.l10n, error)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: onRetry,
               style: OutlinedButton.styleFrom(minimumSize: const Size(120, 48)),
-              child: const Text('ลองใหม่'),
+              child: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -442,7 +463,7 @@ class _ListFooter extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Center(
           child: Semantics(
-            label: 'กำลังโหลดรายการเพิ่ม',
+            label: context.l10n.loadingMore,
             child: const CircularProgressIndicator(),
           ),
         ),
@@ -452,7 +473,7 @@ class _ListFooter extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: Text(
-          'แสดงครบทุกรายการแล้ว',
+          context.l10n.endOfList,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),

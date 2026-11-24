@@ -11,6 +11,7 @@ import 'package:inblack_orders/features/orders/presentation/orders_list_screen.d
 import 'package:inblack_orders/features/outbox/application/outbox_providers.dart';
 import 'package:inblack_orders/features/realtime/application/realtime_providers.dart';
 import 'package:inblack_orders/features/realtime/data/realtime_client.dart';
+import 'package:inblack_orders/l10n/app_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import '../../helpers/fake_outbox_actions.dart';
@@ -87,6 +88,9 @@ void main() {
           networkOnlineProvider.overrideWith((ref) => Stream.value(true)),
         ],
         child: MaterialApp(
+          locale: const Locale('th'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context)
                 .copyWith(textScaler: TextScaler.linear(textScale)),

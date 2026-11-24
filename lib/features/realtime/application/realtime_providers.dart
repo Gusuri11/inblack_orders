@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inblack_orders/core/config/app_config.dart';
 import 'package:inblack_orders/core/connectivity/network_status.dart';
 import 'package:inblack_orders/core/database/database_providers.dart';
 import 'package:inblack_orders/core/network/dio_factory.dart';
+import 'package:inblack_orders/core/network/network_providers.dart';
+import 'package:inblack_orders/core/notifications/notification_providers.dart';
 import 'package:inblack_orders/features/auth/application/auth_providers.dart';
 import 'package:inblack_orders/features/orders/application/orders_providers.dart';
 import 'package:inblack_orders/features/realtime/data/order_event_applier.dart';
@@ -36,10 +37,11 @@ final realtimeClientProvider = Provider<RealtimeClient>((ref) {
   final applier = OrderEventApplier(
     db: ref.watch(appDatabaseProvider),
     sync: engine.sync,
+    onStatusChanges: ref.watch(orderNotifierProvider).handle,
   );
   final dio = ref.watch(authenticatedDioProvider);
   final client = RealtimeClient(
-    baseUrl: Uri.parse(AppConfig.baseUrl),
+    baseUrl: Uri.parse(ref.watch(baseUrlProvider)),
     session: ref.watch(sessionManagerProvider),
     sink: applier,
     connector: ChannelSocket.new,

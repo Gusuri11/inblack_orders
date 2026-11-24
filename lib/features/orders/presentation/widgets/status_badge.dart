@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/domain/order_status.dart';
 
 class StatusColors {
@@ -52,7 +53,7 @@ class StatusBadge extends StatelessWidget {
     final info = OrderStatuses.info(status);
     final colors = StatusColors.of(info.tone, Theme.of(context).brightness);
     return Semantics(
-      label: 'สถานะ: ${info.label}',
+      label: context.l10n.statusSemantics(info.label(context.l10n)),
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -69,7 +70,7 @@ class StatusBadge extends StatelessWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  info.label,
+                  info.label(context.l10n),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: colors.foreground,
                     fontWeight: FontWeight.w600,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inblack_orders/core/database/app_database.dart';
 import 'package:inblack_orders/core/database/outbox_dao.dart';
+import 'package:inblack_orders/core/settings/app_settings.dart';
 import 'package:inblack_orders/features/orders/application/order_detail_controller.dart';
 import 'package:inblack_orders/features/orders/domain/order_status.dart';
 import 'package:inblack_orders/features/orders/presentation/widgets/order_tile.dart';
@@ -42,11 +43,11 @@ class _CancelDialogState extends State<_CancelDialog> {
   void _submit() {
     final text = _reason.text.trim();
     if (text.isEmpty) {
-      setState(() => _error = 'กรุณาระบุเหตุผล');
+      setState(() => _error = context.l10n.reasonRequired);
       return;
     }
     if (text.length > maxReasonLength) {
-      setState(() => _error = 'เหตุผลยาวได้ไม่เกิน $maxReasonLength ตัวอักษร');
+      setState(() => _error = context.l10n.reasonTooLong(maxReasonLength));
       return;
     }
     Navigator.of(context).pop(text);
@@ -55,15 +56,13 @@ class _CancelDialogState extends State<_CancelDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('ยกเลิกคำสั่งซื้อ?'),
+      title: Text(context.l10n.cancelDialogTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'คำสั่งซื้อ ${widget.orderId} จะถูกยกเลิก และไม่สามารถย้อนกลับได้',
-            ),
+            Text(context.l10n.cancelDialogBody(widget.orderId)),
             const SizedBox(height: 16),
             TextField(
               controller: _reason,
@@ -74,7 +73,7 @@ class _CancelDialogState extends State<_CancelDialog> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                labelText: 'เหตุผลในการยกเลิก',
+                labelText: context.l10n.cancelReasonLabel,
                 border: const OutlineInputBorder(),
                 errorText: _error,
               ),
@@ -85,7 +84,7 @@ class _CancelDialogState extends State<_CancelDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('ไม่ยกเลิก'),
+          child: Text(context.l10n.keepOrder),
         ),
         FilledButton(
           onPressed: _submit,
@@ -93,7 +92,7 @@ class _CancelDialogState extends State<_CancelDialog> {
             backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Theme.of(context).colorScheme.onError,
           ),
-          child: const Text('ยืนยันยกเลิก'),
+          child: Text(context.l10n.confirmCancel),
         ),
       ],
     );
@@ -117,7 +116,7 @@ class CancelOrderButton extends ConsumerWidget {
           foregroundColor: Theme.of(context).colorScheme.error,
         ),
         icon: const Icon(Icons.cancel_outlined),
-        label: const Text('ยกเลิกคำสั่งซื้อ'),
+        label: Text(context.l10n.cancelOrder),
         onPressed: () async {
           final version = state.currentVersion;
           final reason = await showCancelDialog(context, orderId);
@@ -126,13 +125,8 @@ class CancelOrderButton extends ConsumerWidget {
               .read(outboxActionsProvider)
               .cancelOrder(orderId: orderId, version: version, reason: reason);
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'บันทึกคำขอยกเลิกแล้ว จะส่งให้อัตโนมัติเมื่อออนไลน์',
-              ),
-            ),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(context.l10n.cancelQueued)));
         },
       ),
     );
@@ -149,6 +143,7 @@ class OutboxBanners extends ConsumerWidget {
     final state = ref.watch(orderDetailControllerProvider(orderId));
     final actions = ref.read(outboxActionsProvider);
     final pending = state.pendingCancel;
+    final l = context.l10n;
     final conflict = state.conflict;
     return Column(
       children: [
@@ -156,25 +151,29 @@ class OutboxBanners extends ConsumerWidget {
           _Banner(
             icon: Icons.schedule_send,
             message: pending.lastError == null
-                ? 'คำขอยกเลิกรอส่ง จะส่งให้อัตโนมัติเมื่อเชื่อมต่อได้'
-                : 'คำขอยกเลิกรอส่ง (${outboxErrorMessage(pending.lastError)}) กำลังลองใหม่อัตโนมัติ',
+                ? l.pendingCancel
+                : l.pendingCancelRetrying(
+                    outboxErrorMessage(l, pending.lastError),
+                  ),
           ),
         if (conflict != null) _ConflictCard(row: conflict, actions: actions),
         for (final row in state.failed)
           _Banner(
             icon: Icons.error_outline,
             tone: _Tone.error,
-            message:
-                '${outboxKindLabel(row.kind)}ไม่สำเร็จ: ${outboxErrorMessage(row.lastError)}',
+            message: l.actionFailed(
+              outboxKindLabel(l, row.kind),
+              outboxErrorMessage(l, row.lastError),
+            ),
             actions: [
               if (row.lastError == 'network' || row.lastError == 'server')
                 TextButton(
                   onPressed: () => unawaited(actions.retry(row.id)),
-                  child: const Text('ลองใหม่'),
+                  child: Text(l.retry),
                 ),
               TextButton(
                 onPressed: () => unawaited(actions.discard(row.id)),
-                child: const Text('ทิ้ง'),
+                child: Text(l.discard),
               ),
             ],
           ),
@@ -191,26 +190,27 @@ class _ConflictCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final snapshot = row.snapshot;
     final status = snapshot?['status'] as String?;
-    final label = status == null ? 'ไม่ทราบ' : OrderStatuses.info(status).label;
+    final label = status == null
+        ? l.unknown
+        : OrderStatuses.info(status).label(l);
     final canRetry =
         status != null && OrderStatuses.cancellable.contains(status);
     return _Banner(
       icon: Icons.sync_problem,
       tone: _Tone.error,
-      message: canRetry
-          ? 'สถานะคำสั่งซื้อเปลี่ยนไประหว่างรอส่ง ตอนนี้: $label ต้องการยกเลิกอีกครั้งหรือไม่?'
-          : 'ยกเลิกไม่สำเร็จ เพราะสถานะเปลี่ยนเป็น $label แล้ว',
+      message: canRetry ? l.conflictAsk(label) : l.conflictFinal(label),
       actions: [
         if (canRetry)
           TextButton(
             onPressed: () => unawaited(actions.cancelAgain(row.id)),
-            child: const Text('ยกเลิกอีกครั้ง'),
+            child: Text(l.cancelAgain),
           ),
         TextButton(
           onPressed: () => unawaited(actions.discard(row.id)),
-          child: Text(canRetry ? 'ไม่ต้องยกเลิก' : 'รับทราบ'),
+          child: Text(canRetry ? l.dontCancel : l.acknowledge),
         ),
       ],
     );
@@ -299,11 +299,11 @@ class _NoteComposerState extends ConsumerState<NoteComposer> {
   Future<void> _send() async {
     final value = _text.text.trim();
     if (value.isEmpty) {
-      setState(() => _error = 'กรุณาพิมพ์ข้อความ');
+      setState(() => _error = context.l10n.noteRequired);
       return;
     }
     if (value.length > maxNoteLength) {
-      setState(() => _error = 'ยาวได้ไม่เกิน $maxNoteLength ตัวอักษร');
+      setState(() => _error = context.l10n.noteTooLong(maxNoteLength));
       return;
     }
     setState(() => _error = null);
@@ -327,7 +327,7 @@ class _NoteComposerState extends ConsumerState<NoteComposer> {
               minLines: 1,
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: 'เขียนโน้ตถึงทีมงาน',
+                labelText: context.l10n.noteLabel,
                 border: const OutlineInputBorder(),
                 errorText: _error,
               ),
@@ -335,7 +335,7 @@ class _NoteComposerState extends ConsumerState<NoteComposer> {
           ),
           const SizedBox(width: 8),
           IconButton.filled(
-            tooltip: 'ส่งโน้ต',
+            tooltip: context.l10n.sendNote,
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             icon: const Icon(Icons.send),
             onPressed: () => unawaited(_send()),
@@ -363,7 +363,7 @@ class QueuedNoteTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PendingChip(label: failed ? 'ส่งไม่สำเร็จ' : 'รอส่ง'),
+            PendingChip(label: failed ? context.l10n.sendFailed : null),
             const SizedBox(height: 6),
             Text('${row.data['text'] ?? ''}'),
           ],
