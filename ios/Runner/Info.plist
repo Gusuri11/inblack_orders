@@ -77,6 +77,17 @@
 			</array>
 		</dict>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>inblack-periodic-sync</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>InBlack Orders uses Face ID to unlock the app.</string>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
 </dict>

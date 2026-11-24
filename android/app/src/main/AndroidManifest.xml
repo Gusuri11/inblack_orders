@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="@string/app_name"
         android:allowBackup="false"
@@ -35,6 +37,17 @@
                 <data android:scheme="inblack" android:host="orders"/>
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".OrdersWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/orders_widget_info"/>
+        </receiver>
 
         <meta-data
             android:name="flutterEmbedding"
